@@ -168,3 +168,144 @@ POC/
 4. As any user, ask *"when is my next payment due?"* → the identical
    `NextPaymentComponent` is shown regardless of type (deterministic).
 ```
+
+---
+
+## The Determinism Gate
+
+> Also called the **deterministic gateway**. The repo's architecture docs
+> ([`component_diagram.md`](documentation/component_diagram.md),
+> [`plus_architecture.md`](documentation/plus_architecture.md)) name it the
+> **Determinism Gate** — that's the term used here.
+
+### Core concept
+
+The POC follows the **Plus architecture**, in which the logic tier has two "seats":
+
+- a **cognitive seat (CLL)** — the AI-style services that *classify, summarize,
+  predict, personalize, and narrate*. They **propose**.
+- a **deterministic seat (BLL)** — the rules-and-math services that *decide*:
+  eligibility, permissions, money math, and regulatory outcomes. They produce
+  authoritative facts that must be reproducible, explainable, and auditable.
+
+The **Determinism Gate is the boundary between the two**, and it enforces a single
+invariant:
+
+> **The CLL proposes; the BLL disposes.**
+
+The AI may decide *what to show and how to phrase it*, but any value that matters —
+money, access, a regulated outcome — must be **produced or authorized by the
+deterministic side before it reaches the user**. The AI is *grounded* before it
+reasons and *gated* before its output is shown.
+
+**Why it matters:** because the model never owns a consequential decision, the
+system stays reproducible (same input → same output), explainable (every result
+traces to a rule + inputs), and auditable. The AI becomes **non-load-bearing for
+decisions** — you could swap the model, or remove it entirely, and every balance,
+payment, and access decision would be unchanged. Architecturally the boundary can
+be enforced at *runtime* (an explicit gate, as in N-Tier Plus) or at *compile-time*
+via the dependency rule (as in Clean Plus); this POC demonstrates the
+**runtime-gate** style.
+
+### How it's implemented in the Angular POC
+
+There is **no single `DeterminismGate` class** — the gate is *conceptual*, realized
+by three concrete code mechanisms.
+
+#### Mechanism 1 — The `deterministic` flag on `InquiryResult`
+
+The gate's central data contract. The classifier stamps each inquiry as
+deterministic or not; the UI later obeys that flag.
+
+[`inquiry.model.ts`](src/app/models/inquiry.model.ts):
+```ts
+export interface InquiryResult {
+  category: InquiryCategory;
+  /** True when the response components are identical for every user type. */
+  deterministic: boolean;
+  label: string;
+}
+```
+
+[`inquiry.service.ts`](src/app/services/inquiry.service.ts) — the classifier is
+where each category is *declared* deterministic (payment/balance/profile →
+`true`) or personalized (hardship/life-event/general → `false`):
+```ts
+classify(text: string): InquiryResult {
+  for (const rule of this.rules) {
+    if (rule.keywords.some((k) => k.test(text))) {
+      return { category: rule.category, deterministic: rule.deterministic, label: rule.label };
+    }
+  }
+  return { category: 'GENERAL', deterministic: false, label: 'General help' };
+}
+```
+The doc comment notes *"In a real system this would call an AI service"* — i.e.
+`InquiryService` stands in for the CLL that **proposes**, and the `deterministic`
+flag is what the gate then enforces.
+
+#### Mechanism 2 — The Dashboard composition rule
+
+This is the gate's actual enforcement point. The template branches on
+`deterministic` to decide **what the borrower is allowed to see**: deterministic
+answers render the *same* single component for everyone; only non-deterministic
+answers get the per-user-type personalized set added.
+
+[`dashboard.component.html`](src/app/components/dashboard/dashboard.component.html):
+```html
+<!-- 2) Personalized set — only for non-deterministic inquiries -->
+@if (!entry.result.deterministic) {
+  @switch (u.userType) {
+    @case (1) { <app-rewards [user]="u" /> <app-refinance-offer [user]="u" /> }
+    @case (2) { <app-autopay [user]="u" /> <app-budget-tips [user]="u" /> }
+    @case (3) { <app-hardship-assistance [user]="u" /> <app-debt-counseling [user]="u" /> }
+  }
+}
+```
+
+The same flag also drives the honesty label shown to the user:
+```html
+<span class="pill" [class.pill--good]="entry.result.deterministic" ...>
+  {{ entry.result.deterministic ? 'Standard response · same for all borrowers'
+                                : 'Personalized for your account' }}
+</span>
+```
+
+The [`dashboard.component.ts`](src/app/components/dashboard/dashboard.component.ts)
+`ask()` method only classifies and records the result — it never decides which
+components appear; the template rule above does.
+
+#### Mechanism 3 — `authGuard`
+
+The access half of the gate: nothing reaches the dashboard without an
+authenticated user.
+
+[`auth.guard.ts`](src/app/services/auth.guard.ts):
+```ts
+export const authGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.isAuthenticated()) return true;
+  return router.createUrlTree(['/login']);
+};
+```
+backed by the deterministic auth signal in
+[`auth.service.ts`](src/app/services/auth.service.ts):
+```ts
+readonly isAuthenticated = computed(() => this._currentUser() !== null);
+```
+
+#### How the three add up to the gate
+
+| Diagram element | Implemented by | Role |
+|---|---|---|
+| `InquiryResult.deterministic` | [`inquiry.model.ts`](src/app/models/inquiry.model.ts) + [`inquiry.service.ts`](src/app/services/inquiry.service.ts) | The gate's verdict — set once, at classification |
+| Dashboard composition rule | [`dashboard.component.html`](src/app/components/dashboard/dashboard.component.html) | Enforces the verdict — decides which components render |
+| `authGuard` | [`auth.guard.ts`](src/app/services/auth.guard.ts) + [`auth.service.ts`](src/app/services/auth.service.ts) | The access precondition |
+
+> **Caveat:** in this POC the answer components (e.g. `NextPaymentComponent`) read
+> figures straight off the `User` object rather than through the `/bll` services,
+> and the `deterministic` flag is set by keyword rules rather than computed by a
+> BLL engine. So the gate is demonstrated *structurally* (CLL proposes a category
+> → the composition rule / authGuard control what the borrower sees) but isn't yet
+> wired so that every number literally originates in the BLL seat.
