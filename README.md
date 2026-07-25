@@ -167,7 +167,6 @@ POC/
    rewards + a refinance offer.
 4. As any user, ask *"when is my next payment due?"* → the identical
    `NextPaymentComponent` is shown regardless of type (deterministic).
-```
 
 ---
 
@@ -309,3 +308,74 @@ readonly isAuthenticated = computed(() => this._currentUser() !== null);
 > BLL engine. So the gate is demonstrated *structurally* (CLL proposes a category
 > → the composition rule / authGuard control what the borrower sees) but isn't yet
 > wired so that every number literally originates in the BLL seat.
+
+### Design note: can AI decide whether an inquiry is deterministic?
+
+Short answer: **use AI for the *classification*, but not for the `deterministic`
+flag itself** — that's exactly the line the Determinism Gate protects.
+
+#### Two different decisions are hiding in `classify()`
+
+Today [`inquiry.service.ts`](src/app/services/inquiry.service.ts) does two things
+at once, and they have very different governance requirements:
+
+1. **"What is this inquiry about?"** — mapping free text → an `InquiryCategory`.
+   This is *interpretation*, the textbook CLL job; the doc comment already says
+   *"in a real system this would call an AI service."* ✅ **Fine for AI.**
+2. **"Must this answer be identical/authoritative for every borrower?"** — the
+   `deterministic` boolean. This is a *policy* about whether the gate injects
+   AI/personalized content or forces a uniform, BLL-sourced answer.
+   ❌ **Should not be an AI output.**
+
+#### Why AI must not own the `deterministic` flag
+
+That flag *is* the gate's verdict — the dashboard uses it to decide (a) whether to
+add the per-user-type personalized cards and (b) which honesty label to show
+("same for all borrowers" vs "personalized"). If the model sets it:
+
+- A misclassification could route a **payment/balance** question into the
+  *personalized* path, letting AI-authored cards attach to a consequential answer.
+- The **"same for all borrowers" label could become false** — the UI would assert
+  a reproducibility guarantee the model didn't actually enforce.
+- You lose reproducibility/auditability on the one bit that governs the whole gate.
+  "Is this consequential?" is precisely what must be deterministic — the AI
+  deciding *when the gate applies to it* defeats the gate.
+
+This is the invariant from
+[`plus_architecture.md`](documentation/plus_architecture.md): *the CLL proposes,
+the BLL disposes.* The category is a proposal; the flag is a disposition.
+
+#### The pattern that keeps the gate intact
+
+Let the AI produce the category; let a **fixed, code/config-owned lookup** derive
+`deterministic` from it:
+
+```ts
+// Policy — owned by code/config, reproducible & auditable. NOT an AI output.
+const DETERMINISTIC_CATEGORIES = new Set<InquiryCategory>([
+  'NEXT_PAYMENT', 'LOAN_BALANCE', 'EXTRA_PAYMENT', 'PROFILE_UPDATE',
+]);
+
+classify(text: string): InquiryResult {
+  const { category, confidence } = this.ai.classifyIntent(text); // CLL proposes
+  // Low-confidence → don't guess a consequential category; fall back safely.
+  const cat = confidence >= THRESHOLD ? category : 'GENERAL';
+  return {
+    category: cat,
+    deterministic: DETERMINISTIC_CATEGORIES.has(cat), // policy disposes the flag
+    label: LABELS[cat],
+  };
+}
+```
+
+Two more guardrails worth keeping:
+
+- **Even for a deterministic category, the numbers still come from the BLL**, never
+  the model (see the caveat above about answer components reading the `User` object
+  directly — worth fixing before wiring in a real classifier).
+- **On low confidence, abstain rather than guess** — route to `GENERAL` or a human
+  hand-off, so a shaky AI guess can't silently mislabel a money question.
+
+So: AI in `InquiryService` for **intent classification** — yes, that's its intended
+role. AI deciding **whether the gate treats the answer as deterministic** — no; keep
+that a deterministic mapping.
