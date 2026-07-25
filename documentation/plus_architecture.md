@@ -4,8 +4,8 @@ This note treats the **Business Logic Layer (BLL)** and the **Cognitive Logic La
 
 The blocks come straight from the companion files:
 
-* **BLL** — deterministic, reproducible, auditable decisions. See [bll_cases.md](bll_cases.md) (referenced below as **BLL-*n***).
-* **CLL** — cognitive: summarize, predict, explain, prioritize, personalize. See [cll_cases.md](cll_cases.md) (referenced as **CLL-*n***).
+* **BLL** — deterministic, reproducible, auditable decisions. See [bll_use_cases.md](bll_use_cases.md) (referenced below as **BLL-*n***).
+* **CLL** — cognitive: summarize, predict, explain, prioritize, personalize. See [cll_use_cases.md](cll_use_cases.md) (referenced as **CLL-*n***).
 
 > **The invariant that must hold in *both* architectures:** *the CLL proposes; the BLL disposes.* Every number that touches money, every gate that touches access, and every regulatory determination is produced by the BLL. The CLL is grounded before it reasons and gated before its output reaches the user. The styles differ only in **where** the CLL is placed and **how** the boundary is enforced — never in **whether** it holds.
 

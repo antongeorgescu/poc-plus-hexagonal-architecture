@@ -1,6 +1,6 @@
 # Consolidated Use-Case List — BLL + CLL
 
-All use cases from [bll_cases.md](bll_cases.md) (deterministic) and [cll_cases.md](cll_cases.md) (cognitive), ranked in **descending order of relevance**.
+All use cases from [bll_use_cases.md](bll_use_cases.md) (deterministic) and [cll_use_cases.md](cll_use_cases.md) (cognitive), ranked in **descending order of relevance**.
 
 * **Relevance (1–5)** is a judgment of overall importance to a student-loan servicing platform — weighing borrower value, business/operational impact, and how central the capability is. **5 = mission-critical / foundational; 1 = niche / nice-to-have.**
 * Each **Case Name** is prefixed with its layer — **BLL** (Business Logic Layer, deterministic) or **CLL** (Cognitive Logic Layer, AI-driven).

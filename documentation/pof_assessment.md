@@ -5,9 +5,9 @@ A **fact-based, measurable framework** for deciding whether a given solution sho
 It is a scored questionnaire: answer each question against **observable evidence**, roll the answers up through fixed weights, and obtain a **final compatibility score from 1 to 5** (5 = highest compatibility), plus a recommended Plus **variant**.
 
 * Concept and layers: [plus_architecture.md](plus_architecture.md)
-* The deterministic building block: [bll_cases.md](bll_cases.md)
-* The cognitive building block: [cll_cases.md](cll_cases.md)
-* Consolidated inventory: [cases_list.md](cases_list.md)
+* The deterministic building block: [bll_use_cases.md](bll_use_cases.md)
+* The cognitive building block: [cll_use_cases.md](cll_use_cases.md)
+* Consolidated inventory: [use_cases_list.md](use_cases_list.md)
 
 > **How to keep it honest:** every score must cite evidence (a document, a test, a metric, a code seam) — not an opinion. If you can't point to evidence, the score is **1** by default until you can.
 
@@ -48,7 +48,7 @@ Each row: the diagnostic **question**, the **evidence to measure**, and anchors 
 |---|---|---|---|---|
 | D1.1 What share of consequential decisions (money, access, compliance) are expressible as explicit rules? | % of such decisions with documented, codifiable rules | <20% or tacit/subjective | 40–79% codifiable | ≥80% already codified **and** unit-tested |
 | D1.2 Are those decisions reproducible? | Same input → same output, regression-tested | Non-reproducible | Mostly, some manual | Fully deterministic, regression-covered |
-| D1.3 Can use cases be cleanly sorted into "must be exact" vs "interpretive"? | A split like [cases_list.md](cases_list.md) exists | Tangled, no split | Partial/informal split | Documented BLL/CLL split |
+| D1.3 Can use cases be cleanly sorted into "must be exact" vs "interpretive"? | A split like [use_cases_list.md](use_cases_list.md) exists | Tangled, no split | Partial/informal split | Documented BLL/CLL split |
 
 *Rationale:* Plus exists to **protect a deterministic boundary**. No boundary → nothing for Plus to add (see cap C1).
 
@@ -175,7 +175,7 @@ These override the weighted average, because some conditions are disqualifying r
 
 ## 8. Worked example — Student Loan Servicing Portal
 
-Scoring the very platform behind [bll_cases.md](bll_cases.md) / [cll_cases.md](cll_cases.md):
+Scoring the very platform behind [bll_use_cases.md](bll_use_cases.md) / [cll_use_cases.md](cll_use_cases.md):
 
 | Dimension | Evidence | Mean | Weighted |
 |---|---|:---:|:---:|

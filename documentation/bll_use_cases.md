@@ -1,4 +1,4 @@
-This is the deterministic counterpart to [cll_cases.md](cll_cases.md). Where the CLL (Cognitive Logic Layer) *summarizes, predicts, explains, prioritizes, and personalizes*, the **BLL (Business Logic Layer)** *decides* — and it must do so the same way every time, for every borrower, in a way that can be replayed and defended years later.
+This is the deterministic counterpart to [cll_use_cases.md](cll_use_cases.md). Where the CLL (Cognitive Logic Layer) *summarizes, predicts, explains, prioritizes, and personalizes*, the **BLL (Business Logic Layer)** *decides* — and it must do so the same way every time, for every borrower, in a way that can be replayed and defended years later.
 
 > **Governing principle (carried over from the CLL review):** eligibility, permissions, money math, and regulatory determinations belong to deterministic rules. The cases below are exactly those "right-column" responsibilities — none of them may be delegated to a model, regardless of model confidence.
 
@@ -366,7 +366,7 @@ The two layers are partners, not rivals:
 * **BLL → CLL:** the rules engine produces authoritative facts and decisions; the CLL turns them into a summary, a plain-language explanation, a prioritized dashboard, or a nudge.
 * **CLL → BLL:** the AI interprets intent, drafts, and recommends; every consequential result is then **gated through** the deterministic engine before it reaches the borrower.
 
-> Rule of thumb: **if getting it wrong costs money, access, or a regulatory finding, it lives in this file.** Everything interpretive, explanatory, or personalizing lives in [cll_cases.md](cll_cases.md).
+> Rule of thumb: **if getting it wrong costs money, access, or a regulatory finding, it lives in this file.** Everything interpretive, explanatory, or personalizing lives in [cll_use_cases.md](cll_use_cases.md).
 
 ***
 
