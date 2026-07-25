@@ -1,0 +1,73 @@
+========================================================================
+ POTENTIAL INQUIRIES PER USER
+========================================================================
+These are example questions each demo user can type into the "Ask" box on
+the dashboard. They are NOT shown as clickable suggestions in the UI — this
+file is the reference list. Password for every account is: demo123
+
+Always shown after login (every user, regardless of question):
+  - Account Summary  -> AccountSummaryComponent
+       loan info / payments / standing, produced by the CLL
+       AccountSummaryService, which sums up the deterministic BLL collectors:
+       UserProfileService + LoanInfoService + PaymentService.
+  - Conversation Insights -> ChatInsightsComponent
+       Live Chat + Chatbot summary and a sentiment "tone meter"
+       (ChatInsightsService). Shown side-by-side with Account Summary.
+
+Ask-box behavior:
+  - The answer appears only after pressing "Ask" (or Enter).
+  - Answers stack newest-on-top; asking something already shown scrolls to
+    the existing card and flashes it instead of duplicating.
+
+Inquiry routing:
+  - "Standard" topics (deterministic) show the same component for all users:
+      * next payment      -> NextPaymentComponent
+      * loan balance      -> LoanBalanceComponent
+      * make a payment    -> MakePaymentComponent (Business Logic Layer)
+      * update profile    -> UpdateProfileComponent (Business Logic Layer)
+  - "Personalized" topics also add the component set for the user's type:
+      * payment hardship  -> JobOpportunitiesComponent (+ per-type set)
+      * life event/relief -> InterestReliefComponent   (+ per-type set)
+      * general/other     -> GeneralHelpComponent      (+ per-type set)
+
+Per-type personalized set (added to personalized topics):
+      * Type 1 -> RewardsComponent + RefinanceOfferComponent
+      * Type 2 -> AutopayComponent + BudgetTipsComponent
+      * Type 3 -> HardshipAssistanceComponent + DebtCounselingComponent
+
+-------------------------------------------------------------------------------------------
+[alice, grace]  Type 1 - Excellent standing
+-------------------------------------------------------------------------------------------
+- I'd like to know when my next payment is due and its amount
+- I'd like to know what's the balance of my loan and when's the maturity date?
+- I'd like to make an extra payment to my loan balance.
+- I'd like to pay down my principal by an extra $150 this month.
+- What's my current balance and payoff amount?
+- Can I lower my interest rate given my strong payment history?
+- What loyalty rewards or perks am I eligible for?
+- I'd like to update my contact information.
+- Please change my email address.
+- I want to change my email address on contact file
+- I'd like to update my contact information
+
+-------------------------------------------------------------------------------------------
+[bob, henry]  Type 2 - Delinquency grade 1
+-------------------------------------------------------------------------------------------
+- I'd like to know when my next payment is due and its amount
+- I'd like to know what's the balance of my loan and when's the maturity date?
+- I may not be able to make a few payments for the time being as I lost my job.
+- I might miss a payment this month - what are my options?
+- How do I set up autopay for my monthly payment?
+- I'd like to make an extra payment to catch up on what I missed.
+- Please update my phone number.
+
+-------------------------------------------------------------------------------------------
+[carol, irene]  Type 3 - Delinquency grade 2
+-------------------------------------------------------------------------------------------
+- I'd like to know what's the balance of my loan and when's the maturity date?
+- I may not be able to make payments for the time being as I lost my job.
+- I just got my first child and I'd like to know if I qualify for an interest rate relief.
+- I can't afford my payments right now.
+- I'm struggling to pay and may miss payments - what help is available?
+- What hardship options or payment relief do I have?
+- I just moved and need to update my mailing address.

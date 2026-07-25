@@ -1,0 +1,84 @@
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(1200px 600px at 50% -10%, #dbeafe, #eef2f7 60%);
+}
+
+.login__card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.4rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+.brand__mark {
+  font-size: 1.3rem;
+}
+.brand__name em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1.2rem 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+input {
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(11, 92, 171, 0.15);
+}
+
+.login__error {
+  color: var(--bad);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.login__demo {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+.login__demo-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.login__demo-grid .btn {
+  font-size: 0.85rem;
+  padding: 0.55rem 1rem;
+  text-align: left;
+}
+code {
+  background: var(--surface-muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+}
