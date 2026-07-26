@@ -57,6 +57,20 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(11, 92, 171, 0.15);
 }
 
+.arch-note {
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border-left: 3px solid var(--brand);
+  border-radius: 8px;
+}
+.arch-note strong {
+  color: var(--brand);
+}
+
 .login__error {
   color: var(--bad);
   font-size: 0.88rem;
