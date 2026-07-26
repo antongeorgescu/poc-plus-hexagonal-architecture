@@ -1,0 +1,107 @@
+@if (user(); as u) {
+  <div class="shell" [class]="welcome()?.themeClass">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark">◆</span>
+        <span class="brand__name">Student Loans <em>Self-Service</em></span>
+      </div>
+      <div class="topbar__right">
+        <div class="who">
+          <span class="who__name">{{ u.firstName }} {{ u.lastName }}</span>
+          <span class="pill"
+            [class.pill--good]="u.userType === 1"
+            [class.pill--warn]="u.userType === 2"
+            [class.pill--bad]="u.userType === 3">
+            {{ typeLabels[u.userType] }}
+          </span>
+        </div>
+        <button class="btn btn--ghost" (click)="logout()">Sign out</button>
+      </div>
+    </header>
+
+    <main class="content">
+      @if (welcome(); as w) {
+        <section class="welcome card">
+          <h1>{{ w.greeting }}</h1>
+          <p class="welcome__q">{{ w.question }}</p>
+
+          <div class="ask">
+            <input
+              type="text"
+              [(ngModel)]="inquiryText"
+              (keyup.enter)="ask()"
+              placeholder="Type your question…"
+              aria-label="Your question"
+            />
+            <button class="btn" (click)="ask()">Ask</button>
+          </div>
+
+          <div class="chips">
+            @for (s of w.suggestions; track s) {
+              <button class="chip" (click)="inquiryText = s; ask()">{{ s }}</button>
+            }
+          </div>
+        </section>
+      }
+
+      @if (entries().length) {
+        <div class="history">
+          <div class="history__bar">
+            <span class="muted small">
+              {{ entries().length }} response{{ entries().length === 1 ? '' : 's' }} · newest first
+            </span>
+            <button class="btn btn--ghost" (click)="clearHistory()">Clear history</button>
+          </div>
+
+          @for (entry of entries(); track entry.id) {
+            <section
+              class="response"
+              [id]="'response-' + entry.id"
+              [class.response--flash]="entry.id === highlightedId()">
+              <div class="response__head">
+                <div>
+                  <span class="muted small">You asked</span>
+                  <p class="response__query">"{{ entry.query }}"</p>
+                </div>
+              </div>
+
+              <div class="response__meta">
+                <span class="pill"
+                  [class.pill--good]="entry.result.deterministic"
+                  [class.pill--warn]="!entry.result.deterministic">
+                  {{ entry.result.deterministic ? 'Standard response · same for all borrowers' : 'Personalized for your account' }}
+                </span>
+                <span class="muted small">Topic: {{ entry.result.label }}</span>
+              </div>
+
+              <div class="grid response__grid">
+                @switch (entry.result.category) {
+                  @case ('NEXT_PAYMENT') {
+                    <app-next-payment [user]="u" />
+                  }
+                  @case ('LOAN_BALANCE') {
+                    <app-loan-balance [user]="u" />
+                  }
+                  @case ('EXTRA_PAYMENT') {
+                    <app-make-payment [user]="u" />
+                  }
+                  @case ('PROFILE_UPDATE') {
+                    <app-update-profile [user]="u" />
+                  }
+                  @default {
+                    <app-general-help [user]="u" />
+                  }
+                }
+              </div>
+            </section>
+          }
+        </div>
+      }
+
+      <div class="insights-panel">
+        <app-account-summary [user]="u" />
+        <app-chat-insights [user]="u" />
+      </div>
+    </main>
+  </div>
+}

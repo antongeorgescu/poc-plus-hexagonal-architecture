@@ -98,8 +98,8 @@ services** — the authoritative source for every figure the UI shows:
 
 The CLL services (`AccountSummaryService`, `InquiryService`, …) may *call* and
 *phrase* these results, but never substitute for them. See
-[`documentation/component_diagram.md`](documentation/component_diagram.md) and
-[`documentation/plus_architecture.md`](documentation/plus_architecture.md).
+[`../documentation/ntier_component_diagram.md`](../documentation/ntier_component_diagram.md) and
+[`../documentation/plus_architecture.md`](../documentation/plus_architecture.md).
 
 ### 6. Inquiry → dynamic component composition
 The user types a question. [`InquiryService`](src/app/services/inquiry.service.ts)
@@ -173,8 +173,8 @@ POC/
 ## The Determinism Gate
 
 > Also called the **deterministic gateway**. The repo's architecture docs
-> ([`component_diagram.md`](documentation/component_diagram.md),
-> [`plus_architecture.md`](documentation/plus_architecture.md)) name it the
+> ([`ntier_component_diagram.md`](../documentation/ntier_component_diagram.md),
+> [`plus_architecture.md`](../documentation/plus_architecture.md)) name it the
 > **Determinism Gate** — that's the term used here.
 
 ### Core concept
@@ -342,7 +342,7 @@ add the per-user-type personalized cards and (b) which honesty label to show
   deciding *when the gate applies to it* defeats the gate.
 
 This is the invariant from
-[`plus_architecture.md`](documentation/plus_architecture.md): *the CLL proposes,
+[`plus_architecture.md`](../documentation/plus_architecture.md): *the CLL proposes,
 the BLL disposes.* The category is a proposal; the flag is a disposition.
 
 #### The pattern that keeps the gate intact

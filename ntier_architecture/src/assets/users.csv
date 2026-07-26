@@ -1,0 +1,7 @@
+username,password,firstName,lastName,userType,programOfStudy,city,state,originalAmount,currentBalance,interestRate,monthlyPayment,nextPaymentDate,nextPaymentAmount,maturityDate,paymentsMade,paymentsMissed,onTimeStreak,creditScore
+alice,demo123,Alice,Thompson,1,Computer Science,Austin,TX,42000,18450,4.25,412.55,2026-08-01,412.55,2031-05-01,58,0,58,788
+grace,demo123,Grace,Kim,1,Registered Nursing,Seattle,WA,55000,21200,3.90,498.10,2026-08-05,498.10,2032-02-05,61,0,61,802
+bob,demo123,Bob,Martinez,2,Mechanical Engineering,Denver,CO,38000,26800,5.10,377.20,2026-08-01,377.20,2033-09-01,34,3,4,671
+henry,demo123,Henry,Osei,2,Marketing,Columbus,OH,29000,20150,5.35,301.75,2026-08-03,301.75,2033-11-03,29,2,6,684
+carol,demo123,Carol,Nguyen,3,Graphic Design,Portland,OR,31000,29400,6.20,318.90,2026-06-01,637.80,2034-04-01,11,7,0,588
+irene,demo123,Irene,Delgado,3,Culinary Arts,Miami,FL,26000,24950,6.45,272.40,2026-05-15,817.20,2034-08-15,8,9,0,561

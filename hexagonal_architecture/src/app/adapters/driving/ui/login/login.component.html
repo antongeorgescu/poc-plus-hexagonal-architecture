@@ -1,0 +1,61 @@
+<div class="login">
+  <div class="login__card card">
+    <div class="brand">
+      <span class="brand__mark">◆</span>
+      <span class="brand__name">Student Loans <em>Self-Service</em></span>
+    </div>
+    <h1>Sign in to your loan account</h1>
+    <p class="muted">Manage payments, check your balance, and get personalized help.</p>
+
+    <form (ngSubmit)="submit()" autocomplete="off">
+      <label for="login-username">
+        <span>Username</span>
+        <input
+          id="login-username"
+          type="text"
+          name="loginUser"
+          autocomplete="off"
+          [(ngModel)]="username"
+          placeholder="e.g. alice"
+        />
+      </label>
+      <label for="login-password">
+        <span>Password</span>
+        <input
+          id="login-password"
+          type="password"
+          name="loginSecret"
+          autocomplete="new-password"
+          [(ngModel)]="password"
+          placeholder="••••••••"
+        />
+      </label>
+
+      @if (error()) {
+        <p class="login__error">{{ error() }}</p>
+      }
+
+      <button class="btn" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <div class="login__demo">
+      <p class="muted small">
+        Demo accounts — one click to sign in (all use password <code>demo123</code>):
+      </p>
+      <div class="login__demo-grid">
+        @for (acct of demoAccounts; track acct.username) {
+          <button
+            class="btn btn--ghost"
+            type="button"
+            [disabled]="loading()"
+            (click)="demoLogin(acct.username)"
+          >
+            {{ acct.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

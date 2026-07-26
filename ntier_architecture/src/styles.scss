@@ -1,0 +1,179 @@
+/* ============================================================
+   Global styles + per-user-type theming
+   Themes are applied by adding .theme-1 / .theme-2 / .theme-3
+   on a container element. Each theme redefines CSS variables.
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2933;
+  background: #eef2f7;
+}
+
+:root {
+  --brand: #0b5cab;
+  --brand-dark: #083f77;
+  --accent: #14b8a6;
+  --surface: #ffffff;
+  --surface-muted: #f4f7fb;
+  --text: #1f2933;
+  --text-muted: #61707d;
+  --border: #dbe3ec;
+  --good: #16a34a;
+  --warn: #d97706;
+  --bad: #dc2626;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(15, 45, 80, 0.08);
+}
+
+/* Theme 1 — Excellent payer: calm, premium blue/green */
+.theme-1 {
+  --brand: #0f766e;
+  --brand-dark: #115e59;
+  --accent: #10b981;
+  --surface-muted: #f0fdfa;
+  --border: #cfeee7;
+}
+
+/* Theme 2 — Occasional missed payment (delinquency grade 1): warm amber */
+.theme-2 {
+  --brand: #b45309;
+  --brand-dark: #92400e;
+  --accent: #f59e0b;
+  --surface-muted: #fffbeb;
+  --border: #fde9c8;
+}
+
+/* Theme 3 — Stopped paying (delinquency grade 2): supportive, steady indigo */
+.theme-3 {
+  --brand: #4338ca;
+  --brand-dark: #3730a3;
+  --accent: #6366f1;
+  --surface-muted: #eef2ff;
+  --border: #d9dcfb;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 0.4rem;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.55;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* --- Reusable UI primitives --- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem 1.5rem;
+}
+
+.card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 0.35rem;
+}
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--brand);
+  color: #fff;
+  transition: transform 0.05s ease, background 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--brand-dark);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px solid var(--border);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-muted);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pill--good {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--good);
+}
+.pill--warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--warn);
+}
+.pill--bad {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--bad);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.stat__label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.stat__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
