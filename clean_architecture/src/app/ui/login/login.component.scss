@@ -77,20 +77,6 @@ input:focus {
   margin: 0;
 }
 
-.login__demo {
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-}
-.login__demo-grid {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-}
-.login__demo-grid .btn {
-  font-size: 0.85rem;
-  padding: 0.55rem 1rem;
-  text-align: left;
-}
 code {
   background: var(--surface-muted);
   padding: 0.1rem 0.35rem;

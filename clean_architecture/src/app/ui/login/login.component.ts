@@ -5,12 +5,6 @@ import { Router } from '@angular/router';
 import { AUTHENTICATE } from '../../infrastructure/tokens';
 import { SessionStore } from '../../infrastructure/session.store';
 
-/** One clickable demo account shown under the form. */
-interface DemoAccount {
-  username: string;
-  label: string;
-}
-
 /**
  * UI — Login screen. Adapts the form to the Authenticate use case (via token)
  * and stores the authenticated borrower in the SessionStore. It computes nothing.
@@ -31,23 +25,6 @@ export class LoginComponent {
   password = '';
   loading = signal(false);
   error = signal<string | null>(null);
-
-  /** The 6 demo accounts (all share the password demo123). */
-  readonly demoAccounts: DemoAccount[] = [
-    { username: 'alice', label: 'Alice — Excellent standing' },
-    { username: 'grace', label: 'Grace — Excellent standing' },
-    { username: 'bob', label: 'Bob — Delinquency grade 1' },
-    { username: 'henry', label: 'Henry — Delinquency grade 1' },
-    { username: 'carol', label: 'Carol — Delinquency grade 2' },
-    { username: 'irene', label: 'Irene — Delinquency grade 2' },
-  ];
-
-  /** One-click demo: fill credentials and sign in. */
-  demoLogin(username: string): void {
-    this.username = username;
-    this.password = 'demo123';
-    this.submit();
-  }
 
   submit(): void {
     if (!this.username || !this.password) {

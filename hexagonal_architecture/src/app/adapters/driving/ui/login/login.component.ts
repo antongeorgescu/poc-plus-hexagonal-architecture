@@ -6,12 +6,6 @@ import { AUTHENTICATE_PORT } from '../../../../configuration/tokens';
 import { AuthenticatePort } from '../../../../ports/driving/authenticate.port';
 import { SessionStore } from '../../../../configuration/session.store';
 
-/** One clickable demo account shown under the form. */
-interface DemoAccount {
-  username: string;
-  label: string;
-}
-
 /**
  * ADAPTERS · DRIVING · UI — Login screen. A primary adapter: it drives the core
  * through the AuthenticatePort (resolved by token) and stores the authenticated
@@ -34,23 +28,6 @@ export class LoginComponent {
   password = '';
   loading = signal(false);
   error = signal<string | null>(null);
-
-  /** The 6 demo accounts (all share the password demo123). */
-  readonly demoAccounts: DemoAccount[] = [
-    { username: 'alice', label: 'Alice — Excellent standing' },
-    { username: 'grace', label: 'Grace — Excellent standing' },
-    { username: 'bob', label: 'Bob — Delinquency grade 1' },
-    { username: 'henry', label: 'Henry — Delinquency grade 1' },
-    { username: 'carol', label: 'Carol — Delinquency grade 2' },
-    { username: 'irene', label: 'Irene — Delinquency grade 2' },
-  ];
-
-  /** One-click demo: fill credentials and sign in. */
-  demoLogin(username: string): void {
-    this.username = username;
-    this.password = 'demo123';
-    this.submit();
-  }
 
   submit(): void {
     if (!this.username || !this.password) {

@@ -40,23 +40,5 @@
         {{ loading() ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>
-
-    <div class="login__demo">
-      <p class="muted small">
-        Demo accounts — one click to sign in (all use password <code>demo123</code>):
-      </p>
-      <div class="login__demo-grid">
-        @for (acct of demoAccounts; track acct.username) {
-          <button
-            class="btn btn--ghost"
-            type="button"
-            [disabled]="loading()"
-            (click)="demoLogin(acct.username)"
-          >
-            {{ acct.label }}
-          </button>
-        }
-      </div>
-    </div>
   </div>
 </div>
