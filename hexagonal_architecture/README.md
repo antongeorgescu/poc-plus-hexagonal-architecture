@@ -9,14 +9,28 @@ a **technology-agnostic application core** sits in the middle, and everything
 outside plugs in through **ports** (interfaces) via **adapters**. There are two
 **symmetric** sides:
 
-- the **driving (primary)** side — adapters that *drive* the core (UI, CLL, tests);
-- the **driven (secondary)** side — adapters the core *drives* (CSV, KB, chat history).
+- the **driving (primary)** side — adapters that *drive* the core (the UI, tests);
+- the **driven (secondary)** side — adapters the core *drives* (CSV, the model
+  runtime, KB, chat history).
 
-> **The CLL proposes, the core disposes.** The cognitive CLL is *just another
-> primary adapter* — no more privileged than the UI. It can invoke an
-> authoritative operation through a driving port, but it can never *become* one.
-> Unplug the CLL entirely and the UI still drives the same ports and the core
-> still computes every balance, payment, and eligibility.
+The core holds **two regions**: the deterministic **BLL** (`core/application` +
+`core/domain`) and the cognitive **CLL** (`core/cognitive`). Both are core because
+both are application logic; the adapter ring holds **technology only** — the LLM
+runtime included, behind `LanguageModelPort`.
+
+> **The CLL proposes, the BLL disposes.** The cognitive region owns no
+> authoritative computation and can reach one only by calling a **driving port** of
+> the deterministic region — the same door the UI uses, with no privileged path.
+> Delete `core/cognitive/` and its four driving ports and the deterministic
+> hexagon still computes every balance, payment, and eligibility. Swap
+> `MockLanguageModel` for a real LLM and no core file changes.
+
+<sub>**Why not put the CLL in the adapter ring?** An adapter translates a
+*technology* into a port. These services translate nothing — they hold policy: the
+fixed determinism map, the topic labels, the sentiment bands, the rule that a
+summary is exactly profile + loan + payment. Filing them as adapters put logic
+where technology belongs and left the genuinely foreign thing — the model — with
+no port at all.</sub>
 
 ## Layering (folders under `src/app/`)
 
@@ -29,42 +43,52 @@ src/app/
 │   │   ├── payment.entity.ts     #   snapshot, payoff, validation, references
 │   │   ├── borrower.entity.ts    #   profile, standing, contact validation
 │   │   ├── eligibility.entity.ts #   rate-relief decision + money math
-│   │   └── inquiry.ts            #   shared vocabulary (category enum, job posting)
-│   └── application/              #   application services (use-case implementations)
-│       ├── authenticate.service.ts   #   implements AuthenticatePort, needs UserRepositoryPort
-│       ├── payment.service.ts        #   implements PaymentPort
-│       ├── loan-info.service.ts      #   implements LoanInfoPort
-│       ├── profile.service.ts        #   implements ProfilePort
-│       └── eligibility.service.ts    #   implements EligibilityPort
+│   │   ├── inquiry.ts            #   shared vocabulary (category enum, job posting)
+│   │   └── sentiment.ts          #   shared vocabulary (sentiment label + tone)
+│   ├── application/              # DETERMINISTIC region (BLL) — implements the BLL driving ports
+│   │   ├── authenticate.service.ts   #   implements AuthenticatePort, needs UserRepositoryPort
+│   │   ├── payment.service.ts        #   implements PaymentPort
+│   │   ├── loan-info.service.ts      #   implements LoanInfoPort
+│   │   ├── profile.service.ts        #   implements ProfilePort
+│   │   └── eligibility.service.ts    #   implements EligibilityPort
+│   └── cognitive/                # COGNITIVE region (CLL) — implements the CLL driving ports.
+│       │                         #   Core logic, NOT an adapter: it holds policy, no technology.
+│       │                         #   Reaches the BLL only through BLL driving ports; reaches the
+│       │                         #   model only through LanguageModelPort.
+│       ├── inquiry.service.ts         # owns the FIXED determinism map + topic labels
+│       ├── personalization.service.ts # owns the theme policy
+│       ├── chat-insights.service.ts   # owns the sentiment bands
+│       └── account-summary.service.ts # owns the aggregation policy (profile+loan+payment)
 │
 ├── ports/                        # THE BOUNDARY — pure TypeScript interfaces, ZERO @angular
 │   ├── driving/                  #   inbound / primary ports — what the core EXPOSES
-│   │   ├── authenticate.port.ts  #     AuthenticatePort
-│   │   ├── payment.port.ts       #     PaymentPort
-│   │   ├── loan-info.port.ts     #     LoanInfoPort
-│   │   ├── profile.port.ts       #     ProfilePort
-│   │   └── eligibility.port.ts   #     EligibilityPort
+│   │   ├── authenticate.port.ts  #     AuthenticatePort      ─┐
+│   │   ├── payment.port.ts       #     PaymentPort            │ deterministic
+│   │   ├── loan-info.port.ts     #     LoanInfoPort           │ region
+│   │   ├── profile.port.ts       #     ProfilePort            │
+│   │   ├── eligibility.port.ts   #     EligibilityPort       ─┘
+│   │   ├── inquiry.port.ts       #     InquiryPort           ─┐
+│   │   ├── personalization.port.ts #   PersonalizationPort    │ cognitive region —
+│   │   ├── chat-insights.port.ts  #    ChatInsightsPort       │ SAME edge, same kind
+│   │   └── account-summary.port.ts #   AccountSummaryPort    ─┘ of door
 │   └── driven/                   #   outbound / secondary ports — what the core REQUIRES
-│       ├── user-repository.port.ts   #     UserRepositoryPort
-│       ├── knowledge-base.port.ts    #     KnowledgeBasePort
-│       └── chat-history.port.ts      #     ChatHistoryPort
+│       ├── user-repository.port.ts   #     UserRepositoryPort (BLL)
+│       ├── language-model.port.ts    #     LanguageModelPort  (CLL) — the LLM behind a port
+│       ├── knowledge-base.port.ts    #     KnowledgeBasePort  (CLL, read-only grounding)
+│       └── chat-history.port.ts      #     ChatHistoryPort    (CLL, read-only grounding)
 │
-├── adapters/
+├── adapters/                     # TECHNOLOGY ONLY — no application logic lives here
 │   ├── driving/                  # PRIMARY adapters — they DRIVE the core through driving ports
-│   │   ├── ui/                   #   Angular UI (login, dashboard, answer + summary cards)
-│   │   └── cll/                  #   the Cognitive Logic Layer — another primary adapter
-│   │       ├── inquiry.service.ts         # classify + propose; deterministic flag from a FIXED map
-│   │       ├── personalization.service.ts # greeting/theme phrasing
-│   │       ├── chat-insights.service.ts   # interprets ChatHistoryPort (grounding) into sentiment
-│   │       └── account-summary.service.ts # narrates via ProfilePort + LoanInfoPort + PaymentPort
+│   │   └── ui/                   #   Angular UI (login, dashboard, answer + summary cards)
 │   └── driven/                   # SECONDARY adapters — the core DRIVES them through driven ports
 │       ├── csv-user.repository.ts     # implements UserRepositoryPort (fetch assets/users.csv)
+│       ├── mock-language-model.ts     # implements LanguageModelPort — keyword rules + templates
 │       ├── in-memory-knowledge-base.ts# implements KnowledgeBasePort
 │       └── in-memory-chat-history.ts  # implements ChatHistoryPort
 │
 └── configuration/                # COMPOSITION ROOT (framework wiring; may import @angular)
     ├── tokens.ts                 #   InjectionTokens typed to the PORT interfaces
-    ├── providers.ts              #   binds adapters↔driven ports, app services↔driving ports
+    ├── providers.ts              #   binds adapters↔driven ports, both core regions↔driving ports
     ├── session.store.ts          #   signal-based SessionStore
     └── auth.guard.ts             #   authGuard on /dashboard
 ```
@@ -74,25 +98,35 @@ src/app/
 The boundary is the **port** — an interface owned by the core. Every interaction
 crosses a port via an adapter:
 
-- **Primary adapters depend on DRIVING ports.** The UI answer components inject
-  driving-port *tokens* (`PAYMENT_PORT`, `LOAN_INFO_PORT`, `PROFILE_PORT`,
-  `AUTHENTICATE_PORT`) typed to the port *interfaces* — never a concrete
-  application class. The CLL enters through the *same* driving ports as the UI.
-- **The core depends on DRIVEN ports.** `AuthenticateService` names only
-  `UserRepositoryPort`; the domain never names `users.csv` or an LLM.
-- **The composition root** (`configuration/providers.ts`) is the single place
-  that knows the concrete classes: it (a) binds driven adapters to driven-port
-  tokens, (b) constructs application services (injecting driven ports) and binds
-  them to driving-port tokens, and (c) binds the CLL primary adapters, which
-  resolve the same driving ports.
+- **Primary adapters depend on DRIVING ports.** The UI injects driving-port
+  *tokens* (`PAYMENT_PORT`, `LOAN_INFO_PORT`, `PROFILE_PORT`, `AUTHENTICATE_PORT`,
+  and equally `INQUIRY_PORT`, `ACCOUNT_SUMMARY_PORT`, …) typed to the port
+  *interfaces* — never a concrete core class. **The UI cannot tell a cognitive port
+  from a deterministic one**; both are just doors in the same edge.
+- **The cognitive region depends on the deterministic region's DRIVING ports.**
+  `AccountSummaryService` names `ProfilePort` / `LoanInfoPort` / `PaymentPort` —
+  the same interfaces the UI uses. This is the inner application of the same rule,
+  and it is what keeps the CLL non-authoritative.
+- **Both regions depend on DRIVEN ports for technology.** `AuthenticateService`
+  names only `UserRepositoryPort`; `InquiryService` names only `LanguageModelPort`
+  and `KnowledgeBasePort`. Nothing in `core/` names `users.csv`, Angular, or a model.
+- **The composition root** (`configuration/providers.ts`) is the single place that
+  knows the concrete classes: it (a) binds driven adapters to driven-port tokens,
+  (b) constructs the deterministic services and binds them to their driving-port
+  tokens, and (c) constructs the cognitive services — handing them deterministic
+  driving ports plus `LANGUAGE_MODEL_PORT` — and binds them to theirs.
 
-Two invariants keep the hexagon honest — verify them yourself:
+Three invariants keep the hexagon honest — verify them yourself:
 
 ```bash
-# core/ and ports/ contain ZERO Angular imports:
-grep -R "@angular" src/app/core src/app/ports    # → no matches
+# 1. core/ and ports/ contain ZERO Angular imports:
+grep -RE "^import.*@angular" src/app/core src/app/ports    # → no matches
 
-# A primary adapter depends on a driving-port INTERFACE, not a concrete class:
+# 2. The cognitive region reaches the deterministic one only through PORTS —
+#    it never imports a deterministic service directly:
+grep -RE "from '\.\./application/" src/app/core/cognitive  # → no matches
+
+# 3. A primary adapter depends on a driving-port INTERFACE, not a concrete class:
 #   src/app/adapters/driving/ui/inquiry/make-payment.component.ts
 #     import { PaymentPort } from '../../../../ports/driving/payment.port';
 #     private paymentPort: PaymentPort = inject(PAYMENT_PORT);
@@ -100,20 +134,31 @@ grep -R "@angular" src/app/core src/app/ports    # → no matches
 
 ## How the CLL / BLL split maps
 
-- **BLL = the hexagon.** All deterministic money math and rules live in
-  `core/domain`, exposed as application services in `core/application` behind the
-  **driving ports**.
-- **CLL = a primary adapter** (`adapters/driving/cll`). It *proposes* (classifies
-  free text, phrases greetings, narrates a summary, interprets tone) but obtains
-  every authoritative value by calling a **driving port** — exactly like the UI.
-  It never computes money or eligibility.
-  - `InquiryService.classify` sets the `deterministic` flag from a **fixed policy
-    map**, not from AI.
-  - `AccountSummaryService` narrates by calling `ProfilePort` + `LoanInfoPort` +
-    `PaymentPort`.
-  - Read-only grounding (jobs, chat history) is served by **driven adapters**
-    through `KnowledgeBasePort` / `ChatHistoryPort`, so even the AI's context is
-    mediated by a port.
+Both are **regions of the one hexagon**. What separates them is not distance from
+the center but *authority*: one computes, the other phrases.
+
+- **BLL = the deterministic region.** All money math and rules live in
+  `core/domain`, exposed as services in `core/application` behind the
+  **deterministic driving ports**.
+- **CLL = the cognitive region** (`core/cognitive`). It *proposes* (classifies free
+  text, phrases greetings, narrates a summary, interprets tone) and is core logic
+  because it owns **policy**. It obtains every authoritative value by calling a
+  **deterministic driving port** — exactly like the UI — and never computes money or
+  eligibility.
+  - `InquiryService.classify` asks `LanguageModelPort` to *propose* a category, then
+    stamps the `deterministic` flag from a **fixed policy map it owns**. A wrong
+    proposal can pick the wrong topic; it cannot move a topic into or out of the
+    deterministic set.
+  - `AccountSummaryService` aggregates `ProfilePort` + `LoanInfoPort` +
+    `PaymentPort` and delegates the *sentences* to `LanguageModelPort`.
+  - `ChatInsightsService` owns the score bands; the model only writes the blurb.
+- **The model is not the CLL.** It is a technology behind `LanguageModelPort`,
+  implemented in this POC by `adapters/driven/mock-language-model.ts` (keyword
+  rules + string templates, no AI call). Note what that adapter is *not* allowed to
+  do: every number it prints arrives already computed.
+- **Grounding crosses a port too** — jobs and chat history are served by driven
+  adapters through `KnowledgeBasePort` / `ChatHistoryPort`, so even the model's
+  context is mediated by an interface.
 
 ## How this differs from the Clean sibling
 
@@ -122,11 +167,12 @@ Same feature set, same domain logic — a different *shape of the boundary*:
 | Aspect | Clean (`../clean_architecture`) | Hexagonal (this project) |
 | --- | --- | --- |
 | Boundary metaphor | concentric rings + the **Dependency Rule** (arrows point inward) | a **hexagon** with **ports** on every edge |
-| Core structure | `domain` + `application/use-cases` (one class per use case) | `core/domain` + `core/application` (one service per driving port) |
+| Core structure | `domain` + `application/use-cases` (one class per use case) | `core/domain` + `core/application` (one service per driving port) + `core/cognitive` |
 | The interface layer | `application/ports` (outbound only); inbound side is implicit (use-case classes are the entry) | an explicit, symmetric **`ports/` layer** with `driving/` **and** `driven/` sides |
 | How the UI reaches the core | injects **use-case tokens** (typed to the concrete use-case class) | injects **driving-port tokens** (typed to the port *interface*) |
-| Where the CLL sits | `adapters/cll` (a detail on the outer ring) | `adapters/driving/cll` (a **primary adapter**, peer of the UI) |
-| One-line guarantee | *Dependency Rule* at compile time | *everything crosses a port* — symmetric & swappable |
+| Where the CLL sits | `adapters/cll` (a detail on the outer ring) | `core/cognitive` — **inside the hexagon**, behind its own driving ports |
+| Where the model sits | inside the CLL adapter | `adapters/driven/mock-language-model.ts`, behind `LanguageModelPort` |
+| One-line guarantee | *Dependency Rule* at compile time | *everything crosses a port* — including the CLL's calls into the BLL |
 
 The N-Tier sibling expresses the same guarantee a third way, as a runtime
 *Determinism Gate*.
@@ -149,8 +195,10 @@ The N-Tier sibling expresses the same guarantee a third way, as a runtime
   (`EligibilityPort` / `EligibilityService`, `InquiryService.getJobsForProgram`
   via `KnowledgeBasePort`) — there is simply no screen that renders them, so the
   free-text routing falls through to `GENERAL` for those topics.
-- Knowledge base and chat history are **synthetic in-memory adapters** (no real
-  DB, no real LLM call).
+- Knowledge base and chat history are **synthetic in-memory adapters**, and the
+  model behind `LanguageModelPort` is `MockLanguageModel` — keyword matching and
+  string templates, **no real DB and no real LLM call**. The port is the point: the
+  swap is a one-line change in `providers.ts`.
 
 ## Run it
 

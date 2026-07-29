@@ -3,7 +3,7 @@
  * PURE TypeScript, ZERO @angular.
  *
  * The `deterministic` flag on an InquiryResult is set from a FIXED business
- * policy (see adapters/driving/cll/inquiry.service.ts), NOT decided by AI.
+ * policy (see core/cognitive/inquiry.service.ts), NOT decided by AI.
  */
 export type InquiryCategory =
   | 'NEXT_PAYMENT'

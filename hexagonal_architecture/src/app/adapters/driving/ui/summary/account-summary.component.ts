@@ -1,14 +1,14 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
-import { AccountSummary } from '../../cll/account-summary.service';
-import { ACCOUNT_SUMMARY_SERVICE } from '../../../../configuration/tokens';
+import { AccountSummary } from '../../../../ports/driving/account-summary.port';
+import { ACCOUNT_SUMMARY_PORT } from '../../../../configuration/tokens';
 
 /**
  * ADAPTERS · DRIVING · UI — Always-on shared card. Holds NO business logic: the
- * summary is produced by the CLL AccountSummaryService (a peer primary adapter),
- * which in turn calls the driving ports (ProfilePort / LoanInfoPort /
- * PaymentPort). CLL narrates; the core computes.
+ * summary arrives through the cognitive AccountSummaryPort, behind which the
+ * cognitive region calls the deterministic driving ports (ProfilePort /
+ * LoanInfoPort / PaymentPort). CLL narrates; the BLL computes.
  */
 @Component({
   selector: 'app-account-summary',
@@ -157,7 +157,7 @@ import { ACCOUNT_SUMMARY_SERVICE } from '../../../../configuration/tokens';
 })
 export class AccountSummaryComponent implements OnInit {
   @Input({ required: true }) user!: User;
-  private summaryService = inject(ACCOUNT_SUMMARY_SERVICE);
+  private summaryService = inject(ACCOUNT_SUMMARY_PORT);
 
   vm!: AccountSummary;
 

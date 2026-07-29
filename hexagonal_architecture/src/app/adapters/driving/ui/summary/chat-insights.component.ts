@@ -1,14 +1,14 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
-import { ChatInsights } from '../../cll/chat-insights.service';
-import { CHAT_INSIGHTS_SERVICE } from '../../../../configuration/tokens';
+import { ChatInsights } from '../../../../ports/driving/chat-insights.port';
+import { CHAT_INSIGHTS_PORT } from '../../../../configuration/tokens';
 
 /**
  * ADAPTERS · DRIVING · UI — Always-on shared card. Presents the CLL's
- * conversation summary and a friendly sentiment tone-meter. All content comes
- * from ChatInsightsService (which reads the ChatHistory driven port); the UI
- * only renders.
+ * conversation summary and a friendly sentiment tone-meter. All content arrives
+ * through the cognitive ChatInsightsPort (behind which the grounding comes from
+ * the ChatHistory driven port); the UI only renders.
  */
 @Component({
   selector: 'app-chat-insights',
@@ -187,7 +187,7 @@ import { CHAT_INSIGHTS_SERVICE } from '../../../../configuration/tokens';
 })
 export class ChatInsightsComponent implements OnInit {
   @Input({ required: true }) user!: User;
-  private chat = inject(CHAT_INSIGHTS_SERVICE);
+  private chat = inject(CHAT_INSIGHTS_PORT);
 
   insights!: ChatInsights;
 

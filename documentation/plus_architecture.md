@@ -142,7 +142,7 @@ Swap the wording (or the model) tomorrow and the figures are unchanged — that 
 
 * **Entities (core)** — `Loan`, `Ledger`, `Payment`, `Borrower`: invariants and money math. Pure TypeScript, **zero `@angular` imports**.
 * **Use Cases / Interactors (application)** — `Authenticate`, `GetLoanInfo`, `GetPaymentSnapshot`, `SubmitPayment`, `GetBorrowerProfile`, `UpdateProfile`, `CheckRateReliefEligibility`. They define the **ports**. Also pure.
-* **Interface Adapters** — controllers/presenters, the repositories (`CsvUserRepository`, in-memory KB / chat history), **and the CLL adapters** (`InquiryService`, `PersonalizationService`, `ChatInsightsService`, `AccountSummaryService`) which *consume* the use-case ports.
+* **Interface Adapters** — controllers/presenters, the core repository (`CsvUserRepository`), **and the CLL adapters** (`InquiryService`, `PersonalizationService`, `ChatInsightsService`, `AccountSummaryService`) which *consume* the use-case ports. The CLL adapters also own read-only **KB / chat-history grounding gateways** (not wired into the core).
 * **Frameworks & Drivers (outer)** — the Angular UI, `users.csv`, and the (mock) LLM runtime as swappable infrastructure. Wiring lives in `infrastructure/` (`InjectionToken`s + provider composition root).
 
 Because the CLL sits in the outer rings, **the core cannot depend on it** — the determinism boundary is enforced by the *compiler and the dependency direction*, not by a runtime gate you must remember to call.
@@ -157,7 +157,8 @@ flowchart TB
   subgraph ADAPT["Interface Adapters"]
     CTRL["Controllers / Presenters"]
     CLLA["CLL Adapters<br/>Inquiry · Personalization<br/>ChatInsights · AccountSummary"]
-    REPO["CsvUserRepository · KB · ChatHistory"]
+    REPO["CsvUserRepository<br/>(→ core)"]
+    GND["KB · ChatHistory<br/>(CLL grounding, read-only)"]
   end
   subgraph APP["Application · Use Cases — deterministic (BLL)"]
     UC["Authenticate · GetLoanInfo<br/>Get/SubmitPayment · Get/UpdateProfile<br/>CheckRateReliefEligibility"]
@@ -168,6 +169,7 @@ flowchart TB
   UIU --> CTRL --> UC
   LLM --> CLLA --> UC
   DBX --> REPO --> UC
+  CLLA -.->|"read-only grounding"| GND
   UC --> E1
 ```
 
@@ -207,70 +209,86 @@ Identical guarantee to N-Tier Plus, but here the CLL *structurally cannot* produ
 
 ## Technical description
 
-**Core elements:** a **technology-agnostic core (the hexagon)** surrounded by **ports** (interfaces) and **adapters**, split symmetrically into a **driving (primary)** side and a **driven (secondary)** side. The BLL is the hexagon; the CLL is *just another driving adapter*.
+**Core elements:** a **technology-agnostic core (the hexagon)** surrounded by **ports** (interfaces) and **adapters**, split symmetrically into a **driving (primary)** side and a **driven (secondary)** side. The core holds **two regions** — the deterministic **BLL** and the cognitive **CLL** — and the adapter ring holds **technology only**, the model runtime included.
 
-* **Application core (the hexagon)** — entities (`Loan`/`Ledger`/`Payment`/`Borrower`, money math) + use-case services that **implement the driving ports**. Pure, **zero `@angular`**.
-* **Driving (primary) ports** — inbound interfaces the core exposes: `AuthenticatePort`, `PaymentPort`, `LoanInfoPort`, `ProfilePort`, `EligibilityPort`.
-* **Driving (primary) adapters** — the Angular UI **and the CLL adapters** (`InquiryService`, `PersonalizationService`, `ChatInsightsService`, `AccountSummaryService`). They *call* the driving ports; no more privileged than a test harness or agent console.
-* **Driven (secondary) ports** — outbound interfaces the core requires: `UserRepositoryPort`, `KnowledgeBasePort`, `ChatHistoryPort`.
-* **Driven (secondary) adapters** — `CsvUserRepository` → `users.csv`, in-memory KB and chat history. Wiring lives in `configuration/`.
+* **Application core (the hexagon)** — pure, **zero `@angular`**, in two regions:
+  * **Deterministic region (BLL)** — entities (`Loan`/`Ledger`/`Payment`/`Borrower`, money math) + use-case services implementing the deterministic driving ports.
+  * **Cognitive region (CLL)** — `InquiryService`, `PersonalizationService`, `ChatInsightsService`, `AccountSummaryService`, implementing the cognitive driving ports. They are core because they hold **policy, not technology**: the fixed determinism map, the topic labels, the sentiment bands, the aggregation rule.
+* **Driving (primary) ports** — inbound, all on the same edge: `AuthenticatePort`, `PaymentPort`, `LoanInfoPort`, `ProfilePort`, `EligibilityPort` (deterministic) **and** `InquiryPort`, `PersonalizationPort`, `ChatInsightsPort`, `AccountSummaryPort` (cognitive). A driver cannot tell the two sets apart.
+* **Driving (primary) adapters** — the Angular UI, plus a future agent console or test harness. Technology that drives; **no logic lives here**.
+* **Driven (secondary) ports** — `UserRepositoryPort` (required by the BLL: the system of record); `LanguageModelPort` (required by the CLL: classification proposals + prose); `KnowledgeBasePort` and `ChatHistoryPort` (required by the CLL, read-only grounding).
+* **Driven (secondary) adapters** — `CsvUserRepository` → `users.csv`; **`MockLanguageModel`** (keyword rules + templates — swap for a hosted LLM); in-memory KB and chat history. Wiring lives in `configuration/`.
 
-The CLL enters only through a driving port and the domain names only ports, so the AI is **non-load-bearing by construction** — the same guarantee as Clean Plus, framed as adapter symmetry rather than rings.
+The **inner** boundary is the same rule applied one level in: the cognitive region reaches the deterministic region **only through that region's driving ports** — the very doors the UI uses. So the AI is **non-load-bearing by construction**, not by being kept at arm's length.
 
 ```mermaid
 flowchart LR
-  subgraph PRI["Driving / Primary Adapters"]
+  subgraph PRI["Driving / Primary Adapters — technology only"]
     UIU["Angular UI"]
-    CLLA["CLL Adapters<br/>Inquiry · Personalization<br/>ChatInsights · AccountSummary"]
-    LLM["LLM runtime (mock)"]
-    LLM --> CLLA
+    AG["Agent console / tests (future)"]
   end
-  subgraph CORE["Application Core — the Hexagon (BLL)"]
+  subgraph CORE["Application Core — the Hexagon"]
     direction TB
-    DP{{"Driving Ports<br/>Authenticate · Payment<br/>LoanInfo · Profile · Eligibility"}}
-    UC["Use-Case Services + Entities<br/>Loan · Ledger · Payment · Borrower"]
-    DVP{{"Driven Ports<br/>UserRepository · KnowledgeBase · ChatHistory"}}
-    DP --> UC --> DVP
+    DPC{{"Driving Ports · COGNITIVE<br/>Inquiry · Personalization<br/>ChatInsights · AccountSummary"}}
+    CLLC["Cognitive region (CLL)<br/>proposes · narrates<br/>determinism map · sentiment bands"]
+    DPB{{"Driving Ports · DETERMINISTIC<br/>Authenticate · Payment<br/>LoanInfo · Profile · Eligibility"}}
+    UC["Deterministic region (BLL)<br/>Use-Case Services + Entities<br/>Loan · Ledger · Payment · Borrower"]
+    DVP{{"Driven Ports<br/>UserRepository · LanguageModel<br/>KnowledgeBase · ChatHistory"}}
+    DPC --> CLLC
+    CLLC -->|"proposes · calls the SAME<br/>driving ports as the UI"| DPB
+    DPB --> UC
+    CLLC --> DVP
+    UC --> DVP
   end
-  subgraph SEC["Driven / Secondary Adapters"]
+  subgraph SEC["Driven / Secondary Adapters — technology only"]
     DBX[("CsvUserRepository → users.csv")]
+    LLMX["MockLanguageModel<br/>(swap for a hosted LLM)"]
     KBX[("KB · chat history")]
   end
-  UIU --> DP
-  CLLA -->|"proposes · calls ports · never computes"| DP
+  UIU --> DPC
+  UIU --> DPB
+  AG --> DPB
   DVP --> DBX
+  DVP --> LLMX
   DVP --> KBX
 ```
 
-> **Ports & Adapters in action:** the **CLL drives the core through the same inbound ports as the UI**, and touches data only through the core's outbound ports. Unplug the CLL adapter (or swap the LLM behind it) and the UI still drives the identical hexagon.
+> **Ports & Adapters in action:** the CLL is **core logic that must knock on the BLL's driving ports** like any other driver — the *model* is the plug-in, sitting in the adapter ring behind `LanguageModelPort`. Delete `core/cognitive` and its four ports and the deterministic hexagon computes untouched; swap the model adapter and no core file changes.
 
-## Proof — the Account Summary, as a primary adapter
+## Proof — the Account Summary, from port to port
 
 ```mermaid
 sequenceDiagram
   actor B as Borrower
   participant SUM as AccountSummaryComponent (primary adapter)
-  participant AS as AccountSummaryService (primary adapter)
-  participant P as Profile/LoanInfo/PaymentPort (driving)
-  participant CORE as Use-case services (hexagon)
+  participant ASP as AccountSummaryPort (driving · cognitive)
+  participant AS as AccountSummaryService (cognitive region)
+  participant P as Profile/LoanInfo/PaymentPort (driving · deterministic)
+  participant CORE as Use-case services (deterministic region)
   participant REPO as UserRepository (driven)
-  SUM->>AS: summarize(user)
+  participant LM as LanguageModelPort → MockLanguageModel (driven)
+  SUM->>ASP: summarize(user)
+  ASP->>AS: cognitive region implements the port
   AS->>P: getProfile / getLoanInfo / getPaymentSnapshot
-  P->>CORE: core implements the driving ports
+  P->>CORE: deterministic region implements these ports
   CORE->>REPO: read via driven port
   REPO-->>CORE: profile / ledger facts
   CORE-->>AS: authoritative facts
+  AS->>LM: narrateLoan / narratePayments (already-computed figures)
+  LM-->>AS: sentences — words only
   AS-->>SUM: narrated summary
-  Note over AS,CORE: the CLL is one driver among many — it calls a port, the core owns the numbers
+  Note over AS,CORE: the CLL calls a port like anyone else — the BLL owns every number
+  Note over AS,LM: the model never receives a computation to perform
 ```
 
 ## Strengths / trade-offs
 
-* ✅ **Cleanest conceptual fit** — the CLL/BLL split *is* the pattern: BLL = core, CLL = one more driving adapter, "propose/dispose" = "cross a port." *(Verified: `core/` and `ports/` contain zero `@angular` imports; the UI depends on driving ports, not concrete services.)*
-* ✅ **Symmetric & swappable** — UI, tests, agents, and the LLM are interchangeable adapters; the core is fully technology-agnostic.
-* ✅ **Boundary is structural** — like Clean, the core depends only on ports.
-* ⚠️ **Most interfaces to maintain** — driving *and* driven ports for everything; overkill for thin CRUD.
-* ⚠️ **Primary/secondary distinction** can confuse teams new to the style.
+* ✅ **Cleanest conceptual fit** — the CLL/BLL split *is* the pattern: two regions of one core, "propose/dispose" = "cross a port," and the model is a swappable adapter. *(Verified: `core/` and `ports/` contain zero `@angular` imports; the UI depends on driving ports, not concrete services; `core/cognitive` imports no deterministic service.)*
+* ✅ **Honest placement** — logic is in the core and technology is in the ring, so the LLM (the thing that actually changes) is the thing behind a port.
+* ✅ **Symmetric & swappable** — UI, tests, agents, DB, and the model are interchangeable adapters; the core is fully technology-agnostic.
+* ✅ **Boundary is structural** — like Clean, the core depends only on ports, and so does the CLL→BLL call.
+* ⚠️ **Most interfaces to maintain** — driving *and* driven ports for both regions; overkill for thin CRUD.
+* ⚠️ **Two-region core needs naming discipline** — "is this policy or technology?" decides `core/cognitive` vs `adapters/driven`, and the primary/secondary distinction still confuses teams new to the style.
 
 ***
 
@@ -286,7 +304,7 @@ The same real POC capabilities hold the determinism boundary in **all three** ar
 | **Make a Payment** | *(nothing authoritative)* | `PaymentService.submitPayment` validates, does money math, returns a reference number |
 | **Rate-relief eligibility** | narrates / explains the outcome | `CheckRateReliefEligibility` decides eligibility deterministically |
 
-**Determinism-flag trace (all styles):** `InquiryService` proposes a category → a **fixed policy map** (never the model) sets `deterministic` → the composition rule (N-Tier), a use-case port (Clean), or a driving port (Hexagonal) yields the authoritative answer. The CLL chooses *what to show and how to phrase it*; it never decides the money or the access.
+**Determinism-flag trace (all styles):** `InquiryService` proposes a category → a **fixed policy map** (never the model) sets `deterministic` → the composition rule (N-Tier), a use-case port (Clean), or a deterministic driving port (Hexagonal) yields the authoritative answer. The CLL chooses *what to show and how to phrase it*; it never decides the money or the access.
 
 ```mermaid
 flowchart LR
@@ -303,14 +321,15 @@ flowchart LR
 | Dimension | N-Tier *Plus* | Clean *Plus* | Hexagonal *Plus* |
 |---|---|---|---|
 | **POC implementation** | [`../ntier_architecture/`](../ntier_architecture/) | [`../clean_architecture/`](../clean_architecture/) | [`../hexagonal_architecture/`](../hexagonal_architecture/) |
-| CLL placement | Peer of BLL in the logic tier | Outer-ring adapter (a "detail") | A driving (primary) adapter |
-| Boundary enforcement | Runtime **Determinism Gate** | Compile-time **Dependency Rule** | The **Port** (every call crosses one) |
+| CLL placement | Peer of BLL in the logic tier | Outer-ring adapter (a "detail") | A **region of the core**, behind its own driving ports |
+| Model (LLM) placement | Inside the CLL seat | Inside the CLL adapter | A **driven adapter** behind `LanguageModelPort` |
+| Boundary enforcement | Runtime **Determinism Gate** | Compile-time **Dependency Rule** | The **Port** (every call crosses one — CLL→BLL included) |
 | BLL isolation from infra | Partial (shares tier / data access) | Strong (pure core) | Strong (pure core) |
-| Adoption cost | Low — fits existing layering | Higher — ports/adapters ceremony | Higher — driving + driven ports |
-| Conceptual fit for CLL/BLL | Adequate (bolt-on gate) | Strong (AI is an outer ring) | **Strongest** (AI is just another adapter) |
-| Best when | Evolving an existing app toward AI | Regulated domain; auditability paramount | Designing for many interchangeable drivers |
+| Adoption cost | Low — fits existing layering | Higher — ports/adapters ceremony | Higher — driving + driven ports for both regions |
+| Conceptual fit for CLL/BLL | Adequate (bolt-on gate) | Strong (AI is an outer ring) | **Strongest** (cognition is first-class; the *model* is the swappable part) |
+| Best when | Evolving an existing app toward AI | Regulated domain; auditability paramount | Designing for many interchangeable drivers *and* models |
 
-All three are legitimate. **N-Tier Plus** is the pragmatic on-ramp for an existing platform; **Clean Plus** and **Hexagonal Plus** make the determinism boundary a property of the **structure** rather than of **discipline** — Clean framing it as inward-pointing rings, Hexagonal as a technology-agnostic core behind symmetric ports. See [architectures_comparison.md](architectures_comparison.md) for the full head-to-head.
+All three are legitimate. **N-Tier Plus** is the pragmatic on-ramp for an existing platform; **Clean Plus** and **Hexagonal Plus** make the determinism boundary a property of the **structure** rather than of **discipline** — Clean framing it as inward-pointing rings, Hexagonal as a technology-agnostic core — cognition included — behind symmetric ports. See [architectures_comparison.md](architectures_comparison.md) for the full head-to-head.
 
 ***
 

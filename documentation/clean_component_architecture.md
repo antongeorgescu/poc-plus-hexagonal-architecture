@@ -14,7 +14,8 @@ This diagram shows the **same POC** as [ntier_component_diagram.md](ntier_compon
 - **Dashboard controller/presenter** — turns UI intent into use-case calls and formats the resulting view model (the composition logic).
 - **Login controller** — adapts the login form to the Authenticate use case.
 - **CLL adapters** *(cognitive "details")* — `InquiryService` (classify intent, narrate), `PersonalizationService` (tone/theme), `ChatInsightsService` (summarize + sentiment), `AccountSummaryService` (narrate the aggregated facts). Each **consumes use-case ports** and provides an insight/presentation port.
-- **Repositories / gateways** — `UserDataService` implementing a `UserRepository` port (CSV read/parse), plus read-only **KnowledgeBase** and **ChatHistory** gateways.
+- **Repository gateway (core)** — `UserDataService` implementing the `UserRepository` port (CSV read/parse) that the deterministic use cases depend on.
+- **CLL grounding gateways** — read-only **KnowledgeBase** and **ChatHistory** gateways consumed by the **CLL adapters** (`InquiryService` / `ChatInsightsService`). Grounding only — never a system of record, and never wired into the use cases or entities.
 
 ### Application — Use Cases / Interactors (deterministic; define the ports)
 - **Authenticate** — verify credentials.
@@ -33,7 +34,7 @@ This diagram shows the **same POC** as [ntier_component_diagram.md](ntier_compon
 - **Authoritative actions:** `MakePayment → SubmitPayment` use case → `Payment` entity money math; `UpdateProfile → UpdateProfile` use case → `Borrower` entity. The UI reaches these only through ports.
 - **Narrated summary (CLL over core):** `AccountSummaryService` (CLL adapter) calls the **GetBorrowerProfile**, **GetLoanInfo**, and **GetPaymentSnapshot** ports and *narrates* the result; it aggregates and phrases, but the numbers originate in the use cases/entities.
 - **Chat insights:** `ChatInsightsService` (CLL adapter) reads the **ChatHistory** gateway read-only and produces a summary + sentiment — a pure outer-ring detail.
-- **Grounding:** `InquiryService` and `ChatInsightsService` read the **KnowledgeBase**/**ChatHistory** gateways for grounding only — never as a system of record, and never inward past a port.
+- **Grounding (CLL-owned):** `InquiryService` and `ChatInsightsService` read the **KnowledgeBase** / **ChatHistory** gateways for grounding only. These gateways belong to the **CLL adapters**, not the deterministic core — they feed narration/classification and never flow inward to the use cases or entities.
 
 ## The Dependency Rule
 
@@ -73,7 +74,8 @@ flowchart TB
     CTRL["Dashboard controller / presenter<br/>compose view model"]
     LOGINC["Login controller"]
     CLLA["CLL Adapters<br/>Inquiry · Personalization<br/>ChatInsights · AccountSummary"]
-    REPO["Repositories / Gateways<br/>UserDataService (UserRepository)<br/>KnowledgeBase · ChatHistory"]
+    REPO["UserDataService<br/>(UserRepository gateway → core)"]
+    GND["CLL grounding gateways<br/>KnowledgeBase · ChatHistory"]
   end
 
   subgraph APP["Application · Use Cases — deterministic (BLL)"]
@@ -94,7 +96,7 @@ flowchart TB
   UIU --> LOGINC
   LLM --> CLLA
   CSV --> REPO
-  KB --> REPO
+  KB --> GND
 
   %% Adapters depend on use-case ports (inward only)
   CTRL --> UCPAY
@@ -105,6 +107,7 @@ flowchart TB
   CLLA --> UCLOAN
   CLLA --> UCPROF
   CLLA --> UCELIG
+  CLLA -.->|"read-only grounding (not inward)"| GND
   REPO --> UCAUTH
   REPO --> UCPAY
   REPO --> UCLOAN

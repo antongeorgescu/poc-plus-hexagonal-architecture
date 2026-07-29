@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { SessionStore } from '../../../../configuration/session.store';
-import { INQUIRY_SERVICE, PERSONALIZATION_SERVICE } from '../../../../configuration/tokens';
-import { WelcomeContent } from '../../cll/personalization.service';
+import { INQUIRY_PORT, PERSONALIZATION_PORT } from '../../../../configuration/tokens';
+import { WelcomeContent } from '../../../../ports/driving/personalization.port';
 import { InquiryResult } from '../../../../core/domain/inquiry';
 import { USER_TYPE_LABEL } from '../../../../core/domain/user.entity';
 
@@ -29,10 +29,11 @@ interface InquiryEntry {
 
 /**
  * ADAPTERS · DRIVING · UI — Dashboard orchestrator. A primary adapter: it reads
- * the authenticated borrower from the SessionStore, asks the CLL InquiryService
- * (a peer primary adapter) to PROPOSE a category, and renders the matching
- * answer component. Every authoritative value inside those components is fetched
- * through a driving port — the CLL never computes it.
+ * the authenticated borrower from the SessionStore, asks the cognitive InquiryPort
+ * to PROPOSE a category, and renders the matching answer component. Note that
+ * InquiryPort and PaymentPort are indistinguishable from out here — both are just
+ * driving ports. Every authoritative value inside those components is fetched
+ * through a deterministic driving port; the CLL never computes it.
  */
 @Component({
   selector: 'app-dashboard',
@@ -53,8 +54,8 @@ interface InquiryEntry {
 })
 export class DashboardComponent {
   private session = inject(SessionStore);
-  private inquiry = inject(INQUIRY_SERVICE);
-  private personalization = inject(PERSONALIZATION_SERVICE);
+  private inquiry = inject(INQUIRY_PORT);
+  private personalization = inject(PERSONALIZATION_PORT);
   private router = inject(Router);
 
   readonly typeLabels = USER_TYPE_LABEL;
