@@ -3,7 +3,7 @@ flowchart LR
   subgraph PRI["Primary / Driving Adapters — technology that drives"]
     direction TB
     UI["Angular UI<br/>Login · Dashboard · answer<br/>personalized · summary cards"]
-    AGENT["Agent console / tests<br/>(future)"]
+    AGENT["Agent console<br/>servicing desktop"]
   end
 
   subgraph CORE["Application Core — the hexagon · zero @angular"]
@@ -18,7 +18,7 @@ flowchart LR
       DOM["Entities<br/>Loan · Ledger · Payment · Borrower<br/>invariants &amp; money math"]
       UC --> DOM
     end
-    DVP{{"Driven Ports<br/>UserRepository (BLL)<br/>LanguageModel · KnowledgeBase<br/>ChatHistory (CLL)"}}
+    DVP{{"Driven Ports<br/>BusinessData repositories (BLL)<br/>LanguageModel · KnowledgeBase<br/>ChatIndex (CLL)"}}
     DPC --> CS
     DPB --> UC
     CS -->|"proposes · calls the SAME<br/>driving ports as the UI"| DPB
@@ -28,16 +28,24 @@ flowchart LR
 
   subgraph SEC["Secondary / Driven Adapters — technology that is driven"]
     direction TB
-    REPO["UserDataService<br/>(UserRepository → CSV)"]
-    CSV[("users.csv<br/>System of Record")]
-    LLM["MockLanguageModel<br/>(keyword rules + templates —<br/>swap for a hosted LLM)"]
-    KB["KnowledgeBase adapter"]
-    KBF[("Synthetic KB<br/>jobs · rate-relief rules")]
-    CH["ChatHistory adapter"]
-    CHF[("Live Chat + Chatbot<br/>transcripts")]
-    REPO --> CSV
-    KB --> KBF
-    CH --> CHF
+    BDS["BusinessDataServices<br/>(borrower · loan · ledger · payment<br/>repositories → operational data)"]
+    ODS[("Operational Data databases<br/>System of Record")]
+    LLM["LLM Runtime adapter<br/>hosted completion + embedding<br/>endpoints · prompt templates"]
+    KBS["KnowledgeBaseService<br/>federated retrieval · ranking · citations"]
+    KBL[("Local student-lending knowledge base<br/>policies · programs · repayment rules")]
+    JOBS[("External jobs repository<br/>postings · employers · skills")]
+    GOV[("Government site<br/>news · rate &amp; program updates")]
+    CIS["ChatIndexService adapter<br/>semantic + metadata search"]
+    CIDX[("Indexed data<br/>chunks · embeddings · metadata")]
+    LCT[("LiveChat transcripts")]
+    CBR[("Chatbot recordings")]
+    BDS --> ODS
+    KBS -->|"[a]"| KBL
+    KBS -->|"[b]"| JOBS
+    KBS -->|"[c]"| GOV
+    CIS --> CIDX
+    LCT -.->|"ingest · chunk · embed"| CIDX
+    CBR -.->|"ingest · transcribe · chunk · embed"| CIDX
   end
 
   %% Drivers → driving ports (the UI cannot tell the two port sets apart)
@@ -46,8 +54,8 @@ flowchart LR
   AGENT --> DPB
 
   %% Core → driven ports → technology
-  DVP --> REPO
+  DVP --> BDS
   DVP --> LLM
-  DVP --> KB
-  DVP --> CH
+  DVP --> KBS
+  DVP --> CIS
 ```
