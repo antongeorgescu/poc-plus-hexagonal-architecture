@@ -11,7 +11,7 @@ import { User } from '../../core/domain/user.entity';
 
 export interface InquiryPort {
   /** Classify free text into a topic + the fixed determinism policy for it. */
-  classify(text: string): InquiryResult;
+  classify(text: string): Promise<InquiryResult>;
   /** Read-only grounding lookup (never a system of record, never a decision). */
   getJobsForProgram(user: User): JobPosting[];
 }

@@ -19,6 +19,8 @@ import { CsvUserRepository } from '../adapters/driven/csv-user.repository';
 import { InMemoryKnowledgeBase } from '../adapters/driven/in-memory-knowledge-base';
 import { InMemoryChatHistory } from '../adapters/driven/in-memory-chat-history';
 import { MockLanguageModel } from '../adapters/driven/mock-language-model';
+import { AzureAiLanguageModel } from '../adapters/driven/azure-ai-language-model';
+import { resolveAiConfig, toAzureOptions, usesAzure } from './ai.config';
 
 // Core · deterministic region (implement the BLL driving ports)
 import { AuthenticateService } from '../core/application/authenticate.service';
@@ -63,8 +65,24 @@ export const hexagonalProviders: Provider[] = [
   { provide: USER_REPOSITORY_PORT, useFactory: () => new CsvUserRepository() },
   { provide: KNOWLEDGE_BASE_PORT, useFactory: () => new InMemoryKnowledgeBase() },
   { provide: CHAT_HISTORY_PORT, useFactory: () => new InMemoryChatHistory() },
-  // The LLM runtime is a technology behind a port — swap this line for a real one.
-  { provide: LANGUAGE_MODEL_PORT, useFactory: () => new MockLanguageModel() },
+  // The LLM runtime is a technology behind a port. THIS factory is the only
+  // place in the app that knows whether the words come from an in-process stub
+  // or from Azure OpenAI — no core file, no UI file, and no other adapter can
+  // tell. The mock is always constructed: in Azure mode it becomes the offline
+  // fallback, so a missing key or a dead endpoint degrades instead of breaking.
+  {
+    provide: LANGUAGE_MODEL_PORT,
+    useFactory: (): LanguageModelPort => {
+      const cfg = resolveAiConfig();
+      const offline = new MockLanguageModel();
+      if (!usesAzure(cfg)) return offline;
+      console.info(
+        `[providers] LanguageModelPort -> Azure OpenAI (mode=${cfg.mode}, ` +
+          `deployment=${cfg.deployment}); falling back to the stub on any failure.`
+      );
+      return new AzureAiLanguageModel(toAzureOptions(cfg), offline);
+    },
+  },
 
   // --- (b) Deterministic region bound to its DRIVING-port tokens (the way IN) ---
   {

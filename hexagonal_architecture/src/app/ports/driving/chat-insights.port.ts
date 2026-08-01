@@ -27,5 +27,5 @@ export interface ChatInsights {
 }
 
 export interface ChatInsightsPort {
-  getInsights(user: User): ChatInsights;
+  getInsights(user: User): Promise<ChatInsights>;
 }

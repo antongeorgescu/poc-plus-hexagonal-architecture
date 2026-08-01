@@ -34,20 +34,24 @@ export class ChatInsightsService implements ChatInsightsPort {
     private readonly languageModel: LanguageModelPort
   ) {}
 
-  getInsights(user: User): ChatInsights {
+  async getInsights(user: User): Promise<ChatInsights> {
     // Grounding: raw facts come from the driven port; this layer only interprets.
     const record = this.history.getHistory(user);
     return {
       summary: record.summary,
-      sentiment: this.toSentiment(record.toneScore),
+      sentiment: await this.toSentiment(record.toneScore),
       liveChatSessions: record.liveChatSessions,
       chatbotMessages: record.chatbotMessages,
       lastContact: record.lastContact,
     };
   }
 
-  /** Maps a 0..100 score to a band, then asks the model to phrase it. */
-  private toSentiment(score: number): ChatSentiment {
+  /**
+   * Maps a 0..100 score to a band, then asks the model to phrase it. The BAND is
+   * chosen here from the raw score before the model is consulted — the model
+   * only ever writes copy for a label the business already picked.
+   */
+  private async toSentiment(score: number): Promise<ChatSentiment> {
     const band = SENTIMENT_BANDS.find((b) => score >= b.min) ?? SENTIMENT_BANDS[SENTIMENT_BANDS.length - 1];
 
     return {
@@ -55,7 +59,7 @@ export class ChatInsightsService implements ChatInsightsPort {
       label: band.label,
       emoji: band.emoji,
       tone: band.tone,
-      blurb: this.languageModel.describeTone(band.label),
+      blurb: await this.languageModel.describeTone(band.label),
     };
   }
 }

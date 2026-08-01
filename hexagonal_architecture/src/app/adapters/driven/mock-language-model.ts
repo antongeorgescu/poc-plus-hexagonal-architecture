@@ -10,6 +10,13 @@
  * Note what this adapter is NOT allowed to do: every number it prints was handed
  * to it already computed by the deterministic region. It formats and phrases; it
  * never calculates a balance, a payoff, or an eligibility outcome.
+ *
+ * The methods are `async` purely to satisfy the port's async contract — nothing
+ * here awaits anything. That is the point: the port is shaped by what the SLOWEST
+ * plausible adapter needs, so an in-process stub and a hosted model are
+ * interchangeable. This class is also the offline FALLBACK that
+ * AzureAiLanguageModel delegates to whenever a live call fails, so the POC keeps
+ * working with no credentials and no network.
  */
 import { LanguageModelPort, WelcomeCopy } from '../../ports/driven/language-model.port';
 import { InquiryCategory } from '../../core/domain/inquiry';
@@ -92,7 +99,7 @@ export class MockLanguageModel implements LanguageModelPort {
     },
   ];
 
-  classifyInquiry(text: string): InquiryCategory | null {
+  async classifyInquiry(text: string): Promise<InquiryCategory | null> {
     for (const rule of this.rules) {
       if (rule.keywords.some((k) => k.test(text))) return rule.category;
     }
@@ -100,7 +107,7 @@ export class MockLanguageModel implements LanguageModelPort {
     return null;
   }
 
-  narrateLoan(profile: BorrowerProfile, loan: LoanInfo): string {
+  async narrateLoan(profile: BorrowerProfile, loan: LoanInfo): Promise<string> {
     // Every figure below arrived pre-computed from LoanInfoPort.
     const years = Math.floor(loan.monthsToMaturity / 12);
     const rem = loan.monthsToMaturity % 12;
@@ -121,7 +128,7 @@ export class MockLanguageModel implements LanguageModelPort {
     );
   }
 
-  narratePayments(payment: PaymentSnapshot): string {
+  async narratePayments(payment: PaymentSnapshot): Promise<string> {
     const base =
       `Your regular monthly payment is ${this.money(payment.monthlyPayment)}, and you've made ` +
       `${payment.paymentsMade} payment${payment.paymentsMade === 1 ? '' : 's'} so far.`;
@@ -146,7 +153,7 @@ export class MockLanguageModel implements LanguageModelPort {
   }
 
   /** The band was chosen by the cognitive region; the model only writes the copy. */
-  describeTone(label: SentimentLabel): string {
+  async describeTone(label: SentimentLabel): Promise<string> {
     const blurbs: Record<SentimentLabel, string> = {
       'Very positive':
         "Your conversations have been positive and engaged — thank you for staying in touch!",
@@ -160,7 +167,7 @@ export class MockLanguageModel implements LanguageModelPort {
     return blurbs[label];
   }
 
-  composeWelcome(user: User): WelcomeCopy {
+  async composeWelcome(user: User): Promise<WelcomeCopy> {
     const name = user.firstName;
     const copy: Record<UserType, WelcomeCopy> = {
       1: {

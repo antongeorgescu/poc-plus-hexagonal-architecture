@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -61,32 +61,59 @@ export class DashboardComponent {
   readonly typeLabels = USER_TYPE_LABEL;
   readonly user = this.session.currentUser;
 
-  readonly welcome = computed<WelcomeContent | null>(() => {
-    const u = this.user();
-    return u ? this.personalization.getWelcome(u) : null;
-  });
+  /**
+   * Welcome copy is now FETCHED, not computed: PersonalizationPort is async
+   * because the copy may come from Azure OpenAI. The template already guarded
+   * this with `@if (welcome(); as w)`, so a null first paint costs nothing.
+   */
+  readonly welcome = signal<WelcomeContent | null>(null);
 
   inquiryText = '';
   readonly entries = signal<InquiryEntry[]>([]);
   readonly highlightedId = signal<number | null>(null);
+  /** True while the cognitive port is classifying — a real call has latency. */
+  readonly asking = signal(false);
   private nextId = 0;
 
-  ask(): void {
-    const query = this.inquiryText.trim();
-    if (!query) return;
-    // CLL proposes the category; the answer components obtain the numbers.
-    const result = this.inquiry.classify(query);
-    this.inquiryText = '';
-
-    const existing = this.entries().find(
-      (e) => e.result.category === result.category
+  constructor() {
+    effect(
+      () => {
+        const u = this.user();
+        if (!u) {
+          this.welcome.set(null);
+          return;
+        }
+        void this.personalization
+          .getWelcome(u)
+          .then((w) => this.welcome.set(w))
+          .catch(() => this.welcome.set(null));
+      },
+      { allowSignalWrites: true }
     );
-    if (existing) {
-      this.scrollToEntry(existing.id);
-      return;
-    }
+  }
 
-    this.entries.update((list) => [{ id: this.nextId++, query, result }, ...list]);
+  async ask(): Promise<void> {
+    const query = this.inquiryText.trim();
+    if (!query || this.asking()) return;
+    // Clear the box immediately so the UI stays responsive across the round trip.
+    this.inquiryText = '';
+    this.asking.set(true);
+    try {
+      // CLL proposes the category; the answer components obtain the numbers.
+      const result = await this.inquiry.classify(query);
+
+      const existing = this.entries().find(
+        (e) => e.result.category === result.category
+      );
+      if (existing) {
+        this.scrollToEntry(existing.id);
+        return;
+      }
+
+      this.entries.update((list) => [{ id: this.nextId++, query, result }, ...list]);
+    } finally {
+      this.asking.set(false);
+    }
   }
 
   private scrollToEntry(id: number): void {

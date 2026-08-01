@@ -29,5 +29,5 @@ export interface AccountSummary {
 }
 
 export interface AccountSummaryPort {
-  summarize(user: User): AccountSummary;
+  summarize(user: User): Promise<AccountSummary>;
 }

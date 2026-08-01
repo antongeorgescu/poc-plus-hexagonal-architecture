@@ -83,11 +83,13 @@ src/app/
 │   └── driven/                   # SECONDARY adapters — the core DRIVES them through driven ports
 │       ├── csv-user.repository.ts     # implements UserRepositoryPort (fetch assets/users.csv)
 │       ├── mock-language-model.ts     # implements LanguageModelPort — keyword rules + templates
+│       ├── azure-ai-language-model.ts # implements LanguageModelPort — REAL Azure OpenAI calls
 │       ├── in-memory-knowledge-base.ts# implements KnowledgeBasePort
 │       └── in-memory-chat-history.ts  # implements ChatHistoryPort
 │
 └── configuration/                # COMPOSITION ROOT (framework wiring; may import @angular)
     ├── tokens.ts                 #   InjectionTokens typed to the PORT interfaces
+    ├── ai.config.ts              #   which model runtime + how to reach it (no secrets)
     ├── providers.ts              #   binds adapters↔driven ports, both core regions↔driving ports
     ├── session.store.ts          #   signal-based SessionStore
     └── auth.guard.ts             #   authGuard on /dashboard
@@ -195,10 +197,76 @@ The N-Tier sibling expresses the same guarantee a third way, as a runtime
   (`EligibilityPort` / `EligibilityService`, `InquiryService.getJobsForProgram`
   via `KnowledgeBasePort`) — there is simply no screen that renders them, so the
   free-text routing falls through to `GENERAL` for those topics.
-- Knowledge base and chat history are **synthetic in-memory adapters**, and the
-  model behind `LanguageModelPort` is `MockLanguageModel` — keyword matching and
-  string templates, **no real DB and no real LLM call**. The port is the point: the
-  swap is a one-line change in `providers.ts`.
+- Knowledge base and chat history are **synthetic in-memory adapters**. The model
+  behind `LanguageModelPort` defaults to `MockLanguageModel` — keyword matching and
+  string templates, no real LLM call — but a **real Azure OpenAI adapter ships
+  alongside it** (see below) and is selected by configuration alone.
+
+## Connecting the CLL to Azure AI
+
+`AzureAiLanguageModel` implements `LanguageModelPort` against Azure OpenAI Chat
+Completions. It is an ordinary secondary adapter: the core never imports it and
+`providers.ts` is the only file that knows it exists.
+
+```bash
+# PowerShell
+$env:AZURE_OPENAI_ENDPOINT = 'https://<resource>.openai.azure.com'
+$env:AZURE_OPENAI_API_KEY  = '<key>'
+npm start
+# then open http://localhost:4200/?ai=proxy   (…/?ai=mock to switch back)
+```
+
+To make Azure the default instead of a query-string opt-in, copy
+`src/assets/ai-config.example.js` to `src/assets/ai-config.js`, set your
+deployment name, and reference it from `src/index.html`. That file is
+git-ignored.
+
+### The key never reaches the browser
+
+`ai.config.ts` has three modes:
+
+| mode | where the model runs | credential |
+| --- | --- | --- |
+| `mock` *(default)* | in-process stub | none |
+| `proxy` | Azure OpenAI via `proxy.conf.js` | held by the dev server; **never in the bundle** |
+| `directKey` | Azure OpenAI straight from the browser | **exposed to anyone with devtools** — local spikes only |
+
+In `proxy` mode the browser calls the same-origin path `/api/azure-ai`; the
+Angular dev server rewrites it to your Azure endpoint and attaches `api-key`
+server-side. `toAzureOptions()` blanks the key unless the mode is `directKey`, so
+`proxy` cannot leak one by accident.
+
+> ⚠️ **`proxy.conf.js` is dev-server only.** `ng build` emits static files with
+> nothing in front of them. A deployed build needs a real server-side endpoint —
+> an API route, APIM policy, or function — doing the same injection.
+
+### What the adapter is not allowed to do
+
+The CLL/BLL split survives the upgrade, and the adapter is where that is enforced:
+
+- **It never computes an authoritative value.** Every figure in a prompt arrives
+  already computed from the deterministic region; the system prompts forbid
+  inventing, recomputing or re-rounding any number, date, rate or amount.
+- **It never decides what a category means.** `classifyInquiry` proposes one of
+  the seven fixed labels or `null`. An unrecognised or unparseable answer becomes
+  `null` — "no opinion" — which `InquiryService` already collapses to `GENERAL`.
+  The determinism policy stays in the core.
+- **It never fails the user.** Any timeout, non-2xx, transport error, content
+  filter or malformed payload delegates to the injected `MockLanguageModel`. The
+  POC therefore behaves identically with no credentials, no network, or a cold
+  Azure resource — you get templated copy instead of generated copy.
+
+### The one thing that had to change inside the hexagon
+
+`LanguageModelPort` was **synchronous**, which quietly assumed the adapter behind
+it was in-process. No remote model can satisfy that shape, so the port — and the
+four cognitive driving ports in front of it — now return `Promise`s.
+
+This is worth noting honestly: the README used to claim that swapping the model
+was a one-line composition-root change, and the first real swap disproved it. The
+port had leaked an assumption about its adapter. Now that the contract is shaped
+by the *slowest plausible* adapter, the claim is true — mock and Azure are
+genuinely interchangeable, and a third runtime would cost one line.
 
 ## Run it
 

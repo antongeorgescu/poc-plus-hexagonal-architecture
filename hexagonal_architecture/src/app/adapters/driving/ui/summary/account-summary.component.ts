@@ -15,6 +15,7 @@ import { ACCOUNT_SUMMARY_PORT } from '../../../../configuration/tokens';
   standalone: true,
   imports: [CommonModule],
   template: `
+    @if (summary; as vm) {
     <section class="card summary">
       <div class="summary__top">
         <div>
@@ -91,6 +92,13 @@ import { ACCOUNT_SUMMARY_PORT } from '../../../../configuration/tokens';
         </p>
       </div>
     </section>
+    } @else {
+      <section class="card summary" aria-busy="true">
+        <div class="card__eyebrow">Account summary</div>
+        <h3>Your loan summary</h3>
+        <p class="muted">Preparing your summary…</p>
+      </section>
+    }
   `,
   styles: [
     `
@@ -159,9 +167,14 @@ export class AccountSummaryComponent implements OnInit {
   @Input({ required: true }) user!: User;
   private summaryService = inject(ACCOUNT_SUMMARY_PORT);
 
-  vm!: AccountSummary;
+  /**
+   * Null until the cognitive port resolves. The port is async because the model
+   * behind it may be remote — so the card renders a placeholder first rather
+   * than assuming the narration is available synchronously.
+   */
+  summary: AccountSummary | null = null;
 
-  ngOnInit(): void {
-    this.vm = this.summaryService.summarize(this.user);
+  async ngOnInit(): Promise<void> {
+    this.summary = await this.summaryService.summarize(this.user);
   }
 }

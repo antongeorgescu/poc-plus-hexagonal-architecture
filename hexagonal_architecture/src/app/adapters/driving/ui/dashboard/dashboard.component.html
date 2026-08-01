@@ -33,12 +33,14 @@
               placeholder="Type your question…"
               aria-label="Your question"
             />
-            <button class="btn" (click)="ask()">Ask</button>
+            <button class="btn" (click)="ask()" [disabled]="asking()">
+              {{ asking() ? 'Thinking…' : 'Ask' }}
+            </button>
           </div>
 
           <div class="chips">
             @for (s of w.suggestions; track s) {
-              <button class="chip" (click)="inquiryText = s; ask()">{{ s }}</button>
+              <button class="chip" (click)="inquiryText = s; ask()" [disabled]="asking()">{{ s }}</button>
             }
           </div>
         </section>

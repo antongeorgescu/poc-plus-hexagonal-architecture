@@ -16,5 +16,5 @@ export interface WelcomeContent {
 }
 
 export interface PersonalizationPort {
-  getWelcome(user: User): WelcomeContent;
+  getWelcome(user: User): Promise<WelcomeContent>;
 }

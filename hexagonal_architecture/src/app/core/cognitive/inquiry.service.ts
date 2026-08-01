@@ -49,10 +49,12 @@ export class InquiryService implements InquiryPort {
     private readonly knowledgeBase: KnowledgeBasePort
   ) {}
 
-  classify(text: string): InquiryResult {
+  async classify(text: string): Promise<InquiryResult> {
     // The model PROPOSES a category (or nothing); this layer decides what that
-    // proposal is worth and stamps the fixed policy onto it.
-    const category = this.languageModel.classifyInquiry(text) ?? 'GENERAL';
+    // proposal is worth and stamps the fixed policy onto it. Awaiting a remote
+    // model changes NOTHING about who decides: an unusable proposal still
+    // collapses to GENERAL, and the determinism policy below is still ours.
+    const category = (await this.languageModel.classifyInquiry(text)) ?? 'GENERAL';
 
     return {
       category,

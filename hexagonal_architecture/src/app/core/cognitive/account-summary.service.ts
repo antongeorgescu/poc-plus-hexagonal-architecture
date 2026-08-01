@@ -26,19 +26,27 @@ export class AccountSummaryService implements AccountSummaryPort {
     private readonly languageModel: LanguageModelPort
   ) {}
 
-  summarize(user: User): AccountSummary {
+  async summarize(user: User): Promise<AccountSummary> {
     // Authoritative values obtained ONLY through the deterministic driving ports.
+    // These are resolved BEFORE the model is called and are never sent back for
+    // recomputation — the model receives finished numbers and returns prose.
     const profile = this.profilePort.getProfile(user);
     const loan = this.loanInfoPort.getLoanInfo(user);
     const payment = this.paymentPort.getSnapshot(user);
+
+    // Two independent narrations — issue them together rather than in series.
+    const [loanSentence, paymentsSentence] = await Promise.all([
+      this.languageModel.narrateLoan(profile, loan),
+      this.languageModel.narratePayments(payment),
+    ]);
 
     return {
       profile,
       loan,
       payment,
       // Phrasing delegated to the model port — it words, it does not compute.
-      loanSentence: this.languageModel.narrateLoan(profile, loan),
-      paymentsSentence: this.languageModel.narratePayments(payment),
+      loanSentence,
+      paymentsSentence,
     };
   }
 }

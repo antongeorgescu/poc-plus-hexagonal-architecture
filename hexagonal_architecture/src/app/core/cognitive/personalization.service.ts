@@ -14,8 +14,8 @@ import { User } from '../domain/user.entity';
 export class PersonalizationService implements PersonalizationPort {
   constructor(private readonly languageModel: LanguageModelPort) {}
 
-  getWelcome(user: User): WelcomeContent {
-    const copy = this.languageModel.composeWelcome(user);
+  async getWelcome(user: User): Promise<WelcomeContent> {
+    const copy = await this.languageModel.composeWelcome(user);
 
     // Theme policy is ours, not the model's.
     return { ...copy, themeClass: `theme-${user.userType}` };

@@ -10,6 +10,13 @@
  * The contract is deliberately narrow: the model produces WORDS and PROPOSALS.
  * It never receives an authoritative computation to perform, and every value it
  * is handed has already been computed by the deterministic region.
+ *
+ * ASYNC BY CONTRACT: every method returns a Promise. A model runtime is remote
+ * I/O — the moment the adapter behind this port is a hosted service rather than
+ * an in-process stub, the call has latency and can fail. Declaring that in the
+ * PORT (not in one adapter) is what actually keeps adapters swappable: mock and
+ * Azure now satisfy the same shape, so the composition root chooses between them
+ * and nothing inside the hexagon knows which one it got.
  */
 import { InquiryCategory } from '../../core/domain/inquiry';
 import { SentimentLabel } from '../../core/domain/sentiment';
@@ -30,17 +37,17 @@ export interface LanguageModelPort {
    * PROPOSE a topic for free text, or null when nothing matches. The cognitive
    * region decides what a proposal is allowed to mean.
    */
-  classifyInquiry(text: string): InquiryCategory | null;
+  classifyInquiry(text: string): Promise<InquiryCategory | null>;
 
   /** Phrase an ALREADY-COMPUTED loan fact set. Words only — no arithmetic. */
-  narrateLoan(profile: BorrowerProfile, loan: LoanInfo): string;
+  narrateLoan(profile: BorrowerProfile, loan: LoanInfo): Promise<string>;
 
   /** Phrase an ALREADY-COMPUTED payment snapshot. Words only — no arithmetic. */
-  narratePayments(payment: PaymentSnapshot): string;
+  narratePayments(payment: PaymentSnapshot): Promise<string>;
 
   /** Supportive blurb for a sentiment band the cognitive region already chose. */
-  describeTone(label: SentimentLabel): string;
+  describeTone(label: SentimentLabel): Promise<string>;
 
   /** Greeting, invitation and suggested prompts for a borrower's persona. */
-  composeWelcome(user: User): WelcomeCopy;
+  composeWelcome(user: User): Promise<WelcomeCopy>;
 }

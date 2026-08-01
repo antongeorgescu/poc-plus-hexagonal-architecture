@@ -15,6 +15,7 @@ import { CHAT_INSIGHTS_PORT } from '../../../../configuration/tokens';
   standalone: true,
   imports: [CommonModule],
   template: `
+    @if (data; as insights) {
     <section class="card">
       <div class="card__eyebrow">Conversation insights</div>
       <h3>Your conversations with us</h3>
@@ -88,6 +89,13 @@ import { CHAT_INSIGHTS_PORT } from '../../../../configuration/tokens';
         }
       </div>
     </section>
+    } @else {
+      <section class="card" aria-busy="true">
+        <div class="card__eyebrow">Conversation insights</div>
+        <h3>Your conversations with us</h3>
+        <p class="muted">Reading your recent conversations…</p>
+      </section>
+    }
   `,
   styles: [
     `
@@ -189,9 +197,10 @@ export class ChatInsightsComponent implements OnInit {
   @Input({ required: true }) user!: User;
   private chat = inject(CHAT_INSIGHTS_PORT);
 
-  insights!: ChatInsights;
+  /** Null until the cognitive port resolves — the tone blurb may come from Azure. */
+  data: ChatInsights | null = null;
 
-  ngOnInit(): void {
-    this.insights = this.chat.getInsights(this.user);
+  async ngOnInit(): Promise<void> {
+    this.data = await this.chat.getInsights(this.user);
   }
 }
