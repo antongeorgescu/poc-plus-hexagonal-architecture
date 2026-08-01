@@ -4,6 +4,7 @@
  * CLL) may narrate these numbers but structurally cannot compute them.
  */
 import { User } from './user.entity';
+import { parseIsoDate } from './date';
 
 export interface LoanInfo {
   originalAmount: number;
@@ -26,7 +27,7 @@ export function paidPercent(user: User): number {
 /** Whole months remaining until maturity (never negative). */
 export function monthsToMaturity(maturityDate: string): number {
   const now = new Date();
-  const maturity = new Date(maturityDate);
+  const maturity = parseIsoDate(maturityDate);
   const months =
     (maturity.getFullYear() - now.getFullYear()) * 12 +
     (maturity.getMonth() - now.getMonth());

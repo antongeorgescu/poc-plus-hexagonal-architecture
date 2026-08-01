@@ -24,6 +24,7 @@ import { SentimentLabel } from '../../core/domain/sentiment';
 import { User, UserType } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';
+import { parseIsoDate } from '../../core/domain/date';
 import { PaymentSnapshot } from '../../core/domain/payment.entity';
 
 interface CategoryRule {
@@ -115,7 +116,7 @@ export class MockLanguageModel implements LanguageModelPort {
       years > 0
         ? `${years} year${years === 1 ? '' : 's'}${rem ? ` and ${rem} month${rem === 1 ? '' : 's'}` : ''}`
         : `${rem} month${rem === 1 ? '' : 's'}`;
-    const maturity = new Date(loan.maturityDate).toLocaleDateString(undefined, {
+    const maturity = parseIsoDate(loan.maturityDate).toLocaleDateString(undefined, {
       month: 'long',
       year: 'numeric',
     });
@@ -210,7 +211,7 @@ export class MockLanguageModel implements LanguageModelPort {
   }
 
   private date(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return parseIsoDate(iso).toLocaleDateString(undefined, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',

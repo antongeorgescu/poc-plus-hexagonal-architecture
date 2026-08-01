@@ -12,6 +12,7 @@ import { GetLoanInfo } from '../../application/use-cases/get-loan-info.usecase';
 import { GetPaymentSnapshot } from '../../application/use-cases/get-payment-snapshot.usecase';
 import { BorrowerProfile } from '../../domain/borrower.entity';
 import { LoanInfo } from '../../domain/loan.entity';
+import { parseIsoDate } from '../../domain/date';
 import { PaymentSnapshot } from '../../domain/payment.entity';
 import { User } from '../../domain/user.entity';
 
@@ -52,7 +53,7 @@ export class AccountSummaryService {
       years > 0
         ? `${years} year${years === 1 ? '' : 's'}${rem ? ` and ${rem} month${rem === 1 ? '' : 's'}` : ''}`
         : `${rem} month${rem === 1 ? '' : 's'}`;
-    const maturity = new Date(loan.maturityDate).toLocaleDateString(undefined, {
+    const maturity = parseIsoDate(loan.maturityDate).toLocaleDateString(undefined, {
       month: 'long',
       year: 'numeric',
     });
@@ -98,7 +99,7 @@ export class AccountSummaryService {
   }
 
   private date(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return parseIsoDate(iso).toLocaleDateString(undefined, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',

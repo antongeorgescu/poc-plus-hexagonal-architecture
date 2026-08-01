@@ -14,6 +14,8 @@ import { NextPaymentComponent } from '../inquiry/next-payment.component';
 import { LoanBalanceComponent } from '../inquiry/loan-balance.component';
 import { MakePaymentComponent } from '../inquiry/make-payment.component';
 import { UpdateProfileComponent } from '../inquiry/update-profile.component';
+import { JobOpportunitiesComponent } from '../inquiry/job-opportunities.component';
+import { InterestReliefComponent } from '../inquiry/interest-relief.component';
 import { GeneralHelpComponent } from '../inquiry/general-help.component';
 
 // Always-on shared cards
@@ -47,6 +49,8 @@ interface InquiryEntry {
     LoanBalanceComponent,
     MakePaymentComponent,
     UpdateProfileComponent,
+    JobOpportunitiesComponent,
+    InterestReliefComponent,
     GeneralHelpComponent,
   ],
   templateUrl: './dashboard.component.html',

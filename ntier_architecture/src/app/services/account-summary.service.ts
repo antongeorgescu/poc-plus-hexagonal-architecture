@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { User } from '../models/user.model';
+import { parseIsoDate } from '../models/date.util';
 import {
   UserProfileService,
   BorrowerProfile,
@@ -51,7 +52,7 @@ export class AccountSummaryService {
       years > 0
         ? `${years} year${years === 1 ? '' : 's'}${rem ? ` and ${rem} month${rem === 1 ? '' : 's'}` : ''}`
         : `${rem} month${rem === 1 ? '' : 's'}`;
-    const maturity = new Date(loan.maturityDate).toLocaleDateString(undefined, {
+    const maturity = parseIsoDate(loan.maturityDate).toLocaleDateString(undefined, {
       month: 'long',
       year: 'numeric',
     });
@@ -97,7 +98,7 @@ export class AccountSummaryService {
   }
 
   private date(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return parseIsoDate(iso).toLocaleDateString(undefined, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',

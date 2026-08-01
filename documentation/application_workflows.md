@@ -213,8 +213,8 @@ flowchart TD
 | `LOAN_BALANCE` | ✅ true | `LoanBalanceComponent` — figures from `LoanInfoPort` |
 | `EXTRA_PAYMENT` | ✅ true | `MakePaymentComponent` — validation + money math in `PaymentPort` |
 | `PROFILE_UPDATE` | ✅ true | `UpdateProfileComponent` — validation in `ProfilePort` |
-| `HARDSHIP` | ⬜ false | Cognitive — situation-dependent guidance |
-| `LIFE_EVENT` | ⬜ false | Cognitive — but `EligibilityPort` still decides the outcome |
+| `HARDSHIP` | ⬜ false | `JobOpportunitiesComponent` — grounded job postings via `KnowledgeBasePort` |
+| `LIFE_EVENT` | ⬜ false | `InterestReliefComponent` — outcome decided by `EligibilityPort` |
 | `GENERAL` | ⬜ false | `GeneralHelpComponent` — grounded via `KnowledgeBasePort` |
 
 ### Worked examples
@@ -239,9 +239,11 @@ contains the word *balance*, so a naïve match would route it to
 borrower wants to *pay*, not to *ask*.
 
 **"I may not be able to make payments for the time being as I lost my job."**
-→ proposed `HARDSHIP` → **cognitive**. There is no single correct answer here;
-the useful response depends on the borrower's standing, arrears and history. The
-badge switches to *"Personalized for your account"*.
+→ proposed `HARDSHIP` → **cognitive**. The badge switches to *"Personalized for
+your account"* and `JobOpportunitiesComponent` renders: the hardship messaging
+adapts to the borrower's tier, and the job postings are matched to their program
+of study and location through `KnowledgeBasePort`. Nothing here is authoritative
+— it is grounding plus tone.
 
 **"Can you help me find work in my field?"**
 → no label matches, model returns `NONE` → `null` → `GENERAL` → **cognitive**.
@@ -341,8 +343,7 @@ empty state.
 - **Two of the five sentiment bands never appear.** Observed scores cluster at
   91, 36–38 and 11–13, so "Positive" (60–79) and "Neutral" (45–59) are never
   rendered. The meter only ever shows very positive, negative, or very negative.
-- **`HARDSHIP` and `LIFE_EVENT` have no dedicated answer component.** Both
-  classify correctly and display the right topic label, but the dashboard
-  `@switch` has no case for them, so they fall through to the general help card.
-  This hits type-3 borrowers hardest, since their suggested prompts steer
-  directly into exactly those two topics.
+- ~~`HARDSHIP` and `LIFE_EVENT` have no dedicated answer component.~~
+  **Fixed.** Both now render `JobOpportunitiesComponent` and
+  `InterestReliefComponent` respectively, in the Hexagonal and Clean POCs alike —
+  matching the N-Tier original, which had them all along.

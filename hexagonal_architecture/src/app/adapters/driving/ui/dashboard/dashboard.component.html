@@ -90,6 +90,12 @@
                   @case ('PROFILE_UPDATE') {
                     <app-update-profile [user]="u" />
                   }
+                  @case ('HARDSHIP') {
+                    <app-job-opportunities [user]="u" />
+                  }
+                  @case ('LIFE_EVENT') {
+                    <app-interest-relief [user]="u" />
+                  }
                   @default {
                     <app-general-help [user]="u" />
                   }

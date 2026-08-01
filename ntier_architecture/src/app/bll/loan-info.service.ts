@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { User } from '../models/user.model';
+import { parseIsoDate } from '../models/date.util';
 
 export interface LoanInfo {
   originalAmount: number;
@@ -37,7 +38,7 @@ export class LoanInfoService {
 
   private monthsToMaturity(maturityDate: string): number {
     const now = new Date();
-    const maturity = new Date(maturityDate);
+    const maturity = parseIsoDate(maturityDate);
     const months =
       (maturity.getFullYear() - now.getFullYear()) * 12 +
       (maturity.getMonth() - now.getMonth());

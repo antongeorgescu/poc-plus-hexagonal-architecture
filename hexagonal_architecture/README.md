@@ -192,11 +192,12 @@ The N-Tier sibling expresses the same guarantee a third way, as a runtime
 - **No per-user-type personalized card matrix** (autopay / rewards / refinance /
   budget-tips / debt-counseling / hardship-assistance) — present in the N-Tier
   version, omitted here.
-- **No HARDSHIP / LIFE_EVENT answer UIs.** The classifier still recognizes both
-  categories and the **core keeps eligibility + jobs fully wired**
-  (`EligibilityPort` / `EligibilityService`, `InquiryService.getJobsForProgram`
-  via `KnowledgeBasePort`) — there is simply no screen that renders them, so the
-  free-text routing falls through to `GENERAL` for those topics.
+- **HARDSHIP / LIFE_EVENT answer UIs are present.** `JobOpportunitiesComponent`
+  (hardship → matched job postings via `InquiryPort.getJobsForProgram` /
+  `KnowledgeBasePort`) and `InterestReliefComponent` (life event → the rate-relief
+  outcome decided by `EligibilityPort`). Both are personalized: the copy adapts to
+  the borrower's standing tier, while every authoritative value still comes from
+  the core.
 - Knowledge base and chat history are **synthetic in-memory adapters**. The model
   behind `LanguageModelPort` defaults to `MockLanguageModel` — keyword matching and
   string templates, no real LLM call — but a **real Azure OpenAI adapter ships
