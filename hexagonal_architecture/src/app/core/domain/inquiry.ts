@@ -12,6 +12,7 @@ export type InquiryCategory =
   | 'PROFILE_UPDATE'
   | 'HARDSHIP'
   | 'LIFE_EVENT'
+  | 'REPAYMENT_OPTIONS'
   | 'GENERAL';
 
 export interface InquiryResult {

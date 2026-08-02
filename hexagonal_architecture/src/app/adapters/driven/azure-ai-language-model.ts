@@ -62,6 +62,7 @@ const CATEGORIES: InquiryCategory[] = [
   'PROFILE_UPDATE',
   'HARDSHIP',
   'LIFE_EVENT',
+  'REPAYMENT_OPTIONS',
   'GENERAL',
 ];
 
@@ -89,7 +90,12 @@ export class AzureAiLanguageModel implements LanguageModelPort {
       'Reply with the label alone — no punctuation, quotes, or explanation. ' +
       'If none clearly applies, reply exactly NONE. ' +
       'EXTRA_PAYMENT outranks LOAN_BALANCE when the borrower wants to pay something; ' +
-      'LOAN_BALANCE is for asking what is owed or when the loan matures.';
+      'LOAN_BALANCE is for asking what is owed or when the loan matures. ' +
+      'REPAYMENT_OPTIONS is for exploring scenarios and qualifying conditions — ' +
+      'paying the loan off faster, what repayment assistance requires, or what it ' +
+      'takes to get an interest-rate reduction. Prefer LIFE_EVENT when the message ' +
+      'mentions a life event such as a new child; prefer HARDSHIP when the borrower ' +
+      'says they are struggling or cannot pay.';
 
     const raw = await this.complete(
       [

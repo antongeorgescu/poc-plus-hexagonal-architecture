@@ -29,6 +29,12 @@ const DETERMINISM_POLICY: Record<InquiryCategory, boolean> = {
   PROFILE_UPDATE: true,
   HARDSHIP: false,
   LIFE_EVENT: false,
+  // Scenario & qualifying-condition guidance: paying off faster, what the
+  // repayment-assistance programs require, and what interest relief takes.
+  // COGNITIVE by nature — it explains levers and conditions. Every figure it
+  // shows is still fetched from a deterministic port, and the actual
+  // eligibility verdict remains EligibilityPort's to give.
+  REPAYMENT_OPTIONS: false,
   GENERAL: false,
 };
 
@@ -40,6 +46,7 @@ const CATEGORY_LABEL: Record<InquiryCategory, string> = {
   PROFILE_UPDATE: 'Update your profile',
   HARDSHIP: 'Payment hardship',
   LIFE_EVENT: 'Life event & rate relief',
+  REPAYMENT_OPTIONS: 'Repayment options & scenarios',
   GENERAL: 'General help',
 };
 

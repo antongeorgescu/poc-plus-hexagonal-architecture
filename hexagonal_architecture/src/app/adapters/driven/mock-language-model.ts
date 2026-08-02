@@ -64,6 +64,33 @@ export class MockLanguageModel implements LanguageModelPort {
       ],
     },
     {
+      // Scenario / qualifying-condition guidance. Must precede NEXT_PAYMENT and
+      // LOAN_BALANCE: their /how much.*pay/ and /pay ?off/ are broad enough to
+      // capture "how much extra to pay off faster", which is planning, not a
+      // statement of the scheduled payment. Deliberately does NOT claim bare
+      // /relief/ or /qualify/ — LIFE_EVENT owns those, and stealing them would
+      // route new-child rate-relief questions to the wrong card.
+      category: 'REPAYMENT_OPTIONS',
+      keywords: [
+        // (1) paying off faster
+        /pay(ing)? (it |the loan |this )?off (faster|sooner|quicker|early)/i,
+        /(finish|done) (paying|repaying).*(sooner|faster|early)/i,
+        /(shorten|reduce|cut).*(term|timeline|repayment period)/i,
+        /how (fast|soon|quickly) can I (pay|repay)/i,
+        /how much (extra|more).*(pay|payment)/i,
+        /(what|how).*if I (pay|paid) (more|extra)/i,
+        // (2) repayment-assistance conditions
+        /(repayment|payment) assistance/i,
+        /assistance program/i,
+        // (3) interest-relief conditions & scenarios
+        /lower (my )?(interest )?rate/i,
+        /reduce (my )?(interest )?rate/i,
+        /rate reduction/i,
+        /(condition|requirement|criteria)s?.*(relief|assistance)/i,
+        /(relief|assistance).*(condition|requirement|criteria)/i,
+      ],
+    },
+    {
       category: 'NEXT_PAYMENT',
       keywords: [/next payment/i, /due/i, /when.*(pay|payment)/i, /how much.*pay/i],
     },

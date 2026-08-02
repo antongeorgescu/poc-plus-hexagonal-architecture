@@ -53,8 +53,16 @@ The Hexagonal README puts it bluntly: *"The model is not the CLL."*
 
 ## The policy itself
 
-Every POC contains the same seven-way map. It is the single most important
-constant in the system:
+The map is the single most important constant in the system. **N-Tier and Clean
+carry seven categories; Hexagonal carries eight** — `REPAYMENT_OPTIONS` was added
+there first.
+
+Adding a category is not free anywhere: the shared `InquiryCategory` union grows,
+and **both** classifier adapters must learn to propose the new label — the mock's
+keyword rules and the Azure prompt's allow-list alike. What *is* free is the part
+that matters here. Deciding whether the new category is deterministic was a
+one-line addition to a constant in the core, made without touching a classifier,
+and unreachable by the model either way.
 
 | Category | `deterministic` | Consequence |
 |---|---|---|
@@ -64,6 +72,7 @@ constant in the system:
 | `PROFILE_UPDATE` | ✅ | Same component; validation rules in the BLL |
 | `HARDSHIP` | ⬜ | Personalized — grounding and tone |
 | `LIFE_EVENT` | ⬜ | Personalized, but the **outcome** is a BLL decision |
+| `REPAYMENT_OPTIONS` *(Hexagonal only)* | ⬜ | Scenario and qualifying-condition guidance; shows no projection it cannot source |
 | `GENERAL` | ⬜ | Personalized fallback |
 
 The model never sees this map. That is the whole point: a wrong proposal can

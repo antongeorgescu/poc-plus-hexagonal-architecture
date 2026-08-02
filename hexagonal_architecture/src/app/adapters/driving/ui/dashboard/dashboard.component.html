@@ -102,6 +102,9 @@
                   @case ('LIFE_EVENT') {
                     <app-interest-relief [user]="u" />
                   }
+                  @case ('REPAYMENT_OPTIONS') {
+                    <app-repayment-options [user]="u" />
+                  }
                   @default {
                     <app-general-help [user]="u" />
                   }

@@ -58,7 +58,7 @@ Answer-layer markers ([BLL] / [CLL]):
 - [CLL] What loyalty rewards or perks am I eligible for?
 - [BLL] I want to change my email address on contact file
 - [BLL] I'd like to update my contact information
-- [BLL] How much extra should I pay off my loan in 12 months?
+- [CLL] How much extra should I pay off my loan in 12 months?
 
 -------------------------------------------------------------------------------------------
 [bob, henry]  Type 2 - Delinquency grade 1
@@ -67,7 +67,7 @@ Answer-layer markers ([BLL] / [CLL]):
 - [BLL] I'd like to know what's the balance of my loan and when's the maturity date?
 - [CLL] I may not be able to make a few payments for the time being as I lost my job.
 - [CLL] I might miss a payment this month - what are my options?
-- [CLL] How do I set up autopay for my monthly payment?
+- [CLL] Since my life and my job are better, cow do I set up autopay for my monthly payment?
 - [CLL] How much extra should I pay off my loan in 12 months?
 - [BLL] I'd like to know the amount of extra payment to catch up on what I missed.
 - [BLL] I need to update my phone number.

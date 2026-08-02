@@ -187,7 +187,7 @@ AI proposes *what the question is about*, and fixed business policy decides
 flowchart TD
     Q["Borrower types free text"] --> M["LanguageModelPort.classifyInquiry 🤖<br/>PROPOSES a category — or null"]
     M -->|"null / unrecognised label"| G["GENERAL"]
-    M -->|"one of the 7 labels"| C["Proposed category"]
+    M -->|"one of the 8 labels"| C["Proposed category"]
     G --> P
     C --> P["InquiryService applies DETERMINISM_POLICY<br/>fixed · business-owned · not the model's call"]
     P -->|"deterministic = true"| DET["DETERMINISTIC next step<br/>answer component reads the BLL ports<br/>identical for every borrower"]
@@ -195,7 +195,7 @@ flowchart TD
 ```
 
 1. **Analyze (AI).** `classifyInquiry(text)` asks the model to pick exactly one
-   of seven labels, or reply `NONE`. The reply is normalised and matched against
+   of eight labels, or reply `NONE`. The reply is normalised and matched against
    the allow-list; anything unrecognised becomes `null` — a genuine "no opinion"
    rather than a guess.
 2. **Decide (business policy).** `InquiryService` turns `null` into `GENERAL`,
@@ -215,6 +215,7 @@ flowchart TD
 | `PROFILE_UPDATE` | ✅ true | `UpdateProfileComponent` — validation in `ProfilePort` |
 | `HARDSHIP` | ⬜ false | `JobOpportunitiesComponent` — grounded job postings via `KnowledgeBasePort` |
 | `LIFE_EVENT` | ⬜ false | `InterestReliefComponent` — outcome decided by `EligibilityPort` |
+| `REPAYMENT_OPTIONS` | ⬜ false | `RepaymentOptionsComponent` — payoff-faster, assistance and rate-relief *conditions* |
 | `GENERAL` | ⬜ false | `GeneralHelpComponent` — grounded via `KnowledgeBasePort` |
 
 ### Worked examples

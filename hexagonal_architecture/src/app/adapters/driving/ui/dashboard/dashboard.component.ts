@@ -16,6 +16,7 @@ import { MakePaymentComponent } from '../inquiry/make-payment.component';
 import { UpdateProfileComponent } from '../inquiry/update-profile.component';
 import { JobOpportunitiesComponent } from '../inquiry/job-opportunities.component';
 import { InterestReliefComponent } from '../inquiry/interest-relief.component';
+import { RepaymentOptionsComponent } from '../inquiry/repayment-options.component';
 
 // Shared presentational marker
 import { AiBadgeComponent } from '../shared/ai-badge.component';
@@ -65,6 +66,7 @@ interface InquiryEntry {
     UpdateProfileComponent,
     JobOpportunitiesComponent,
     InterestReliefComponent,
+    RepaymentOptionsComponent,
     GeneralHelpComponent,
   ],
   templateUrl: './dashboard.component.html',
