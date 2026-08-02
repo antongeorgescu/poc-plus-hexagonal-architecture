@@ -46,7 +46,7 @@ If a capability has these properties, an LLM is the wrong tool for the decision 
 
 **Decides:** the rate placed on the note.
 
-**Rule:** rate is set by product, disbursement date, and (for variable products) an index + margin. Fixed once disbursed unless a rule-based modifier applies (see Case 20 autopay, Case 22 SCRA).
+**Rule:** rate is set by product, disbursement date, and (for variable products) an index + margin. Fixed once disbursed unless a rule-based modifier applies (see Case 11 autopay, Case 23 SCRA).
 
 ***
 

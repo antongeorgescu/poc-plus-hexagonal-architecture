@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
 import { AccountSummary } from '../../../../ports/driving/account-summary.port';
 import { ACCOUNT_SUMMARY_PORT } from '../../../../configuration/tokens';
+import { AiBadgeComponent } from '../shared/ai-badge.component';
 
 /**
  * ADAPTERS · DRIVING · UI — Always-on shared card. Holds NO business logic: the
@@ -13,13 +14,15 @@ import { ACCOUNT_SUMMARY_PORT } from '../../../../configuration/tokens';
 @Component({
   selector: 'app-account-summary',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AiBadgeComponent],
   template: `
     @if (summary; as vm) {
     <section class="card summary">
       <div class="summary__top">
         <div>
-          <div class="card__eyebrow">Account summary</div>
+          <div class="card__eyebrow">
+            Account summary <app-ai-badge label="AI-narrated" />
+          </div>
           <h3>Your loan summary</h3>
         </div>
         <span

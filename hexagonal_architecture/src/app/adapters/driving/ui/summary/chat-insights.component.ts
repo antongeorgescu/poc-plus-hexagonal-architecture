@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
 import { ChatInsights } from '../../../../ports/driving/chat-insights.port';
 import { CHAT_INSIGHTS_PORT } from '../../../../configuration/tokens';
+import { AiBadgeComponent } from '../shared/ai-badge.component';
 
 /**
  * ADAPTERS · DRIVING · UI — Always-on shared card. Presents the CLL's
@@ -13,11 +14,13 @@ import { CHAT_INSIGHTS_PORT } from '../../../../configuration/tokens';
 @Component({
   selector: 'app-chat-insights',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AiBadgeComponent],
   template: `
     @if (data; as insights) {
     <section class="card">
-      <div class="card__eyebrow">Conversation insights</div>
+      <div class="card__eyebrow">
+        Conversation insights <app-ai-badge label="AI sentiment + recap" />
+      </div>
       <h3>Your conversations with us</h3>
       <p class="muted">
         A quick recap of your recent Live Chat and Chatbot activity, and how those

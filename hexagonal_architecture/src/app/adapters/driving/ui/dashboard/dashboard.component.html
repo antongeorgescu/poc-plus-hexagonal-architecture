@@ -22,6 +22,7 @@
     <main class="content">
       @if (welcome(); as w) {
         <section class="welcome card">
+          <div class="welcome__mark"><app-ai-badge label="AI-written welcome" /></div>
           <h1>{{ w.greeting }}</h1>
           <p class="welcome__q">{{ w.question }}</p>
 
@@ -74,6 +75,11 @@
                   {{ entry.result.deterministic ? 'Standard response · same for all borrowers' : 'Personalized for your account' }}
                 </span>
                 <span class="muted small">Topic: {{ entry.result.label }}</span>
+                <!-- Driven straight off DETERMINISM_POLICY: non-deterministic
+                     topics are answered by the cognitive region. -->
+                @if (!entry.result.deterministic) {
+                  <app-ai-badge />
+                }
               </div>
 
               <div class="grid response__grid">

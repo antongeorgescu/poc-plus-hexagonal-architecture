@@ -35,39 +35,50 @@ Per-type personalized set (added to personalized topics):
       * Type 2 -> AutopayComponent + BudgetTipsComponent
       * Type 3 -> HardshipAssistanceComponent + DebtCounselingComponent
 
+Answer-layer markers ([BLL] / [CLL]):
+  Every question is CLASSIFIED by the CLL — it proposes the topic. The marker
+  says which layer BUILDS the answer you then see.
+    [BLL]      Deterministic answer. The same component for every borrower; all
+               figures and validation come from the BLL (payment / loan / profile).
+    [CLL]      Cognitive answer. Grounding, narration and per-type personalization.
+               No authoritative figure is produced here.
+    [BLL+CLL]  Cognitively routed and personalized, but the OUTCOME is a BLL
+               decision — rate-relief eligibility and its money math are decided
+               in the deterministic layer; the CLL only phrases the result.
+
 -------------------------------------------------------------------------------------------
 [alice, grace]  Type 1 - Excellent standing
 -------------------------------------------------------------------------------------------
-- I'd like to know when my next payment is due and its amount
-- I'd like to know what's the balance of my loan and when's the maturity date?
-- I'd like to make an extra payment to my loan balance.
-- I'd like to pay down my principal by an extra $150 this month.
-- What's my current balance and payoff amount?
-- Can I lower my interest rate given my strong payment history?
-- What loyalty rewards or perks am I eligible for?
-- I'd like to update my contact information.
-- Please change my email address.
-- I want to change my email address on contact file
-- I'd like to update my contact information
+- [BLL] I'd like to know when my next payment is due and its amount
+- [BLL] I'd like to know what's the balance of my loan and when's the maturity date?
+- [BLL] I'd like to make an extra payment to my loan balance.
+- [BLL] I'd like to pay down my principal by an extra $150 this month.
+- [BLL] What's my current balance and payoff amount?
+- [CLL] Can I lower my interest rate given my strong payment history?
+- [CLL] What loyalty rewards or perks am I eligible for?
+- [BLL] I want to change my email address on contact file
+- [BLL] I'd like to update my contact information
+- [BLL] How much extra should I pay off my loan in 12 months?
 
 -------------------------------------------------------------------------------------------
 [bob, henry]  Type 2 - Delinquency grade 1
 -------------------------------------------------------------------------------------------
-- I'd like to know when my next payment is due and its amount
-- I'd like to know what's the balance of my loan and when's the maturity date?
-- I may not be able to make a few payments for the time being as I lost my job.
-- I might miss a payment this month - what are my options?
-- How do I set up autopay for my monthly payment?
-- I'd like to make an extra payment to catch up on what I missed.
-- Please update my phone number.
+- [BLL] I'd like to know when my next payment is due and its amount
+- [BLL] I'd like to know what's the balance of my loan and when's the maturity date?
+- [CLL] I may not be able to make a few payments for the time being as I lost my job.
+- [CLL] I might miss a payment this month - what are my options?
+- [CLL] How do I set up autopay for my monthly payment?
+- [CLL] How much extra should I pay off my loan in 12 months?
+- [BLL] I'd like to know the amount of extra payment to catch up on what I missed.
+- [BLL] I need to update my phone number.
 
 -------------------------------------------------------------------------------------------
 [carol, irene]  Type 3 - Delinquency grade 2
 -------------------------------------------------------------------------------------------
-- I'd like to know what's the balance of my loan and when's the maturity date?
-- I may not be able to make payments for the time being as I lost my job.
-- I just got my first child and I'd like to know if I qualify for an interest rate relief.
-- I can't afford my payments right now.
-- I'm struggling to pay and may miss payments - what help is available?
-- What hardship options or payment relief do I have?
-- I just moved and need to update my mailing address.
+- [BLL] I'd like to know what's the balance of my loan and when's the maturity date?
+- [CLL] I may not be able to make payments for the time being as I lost my job.
+- [CLL] I just got my first child and I'd like to know if I qualify for an interest rate relief.
+- [CLL] I can't afford my payments right now.
+- [CLL] I'm struggling to pay and may miss payments - what help is available?
+- [CLL] What hardship options or payment relief do I have?
+- [BLL] I just moved and need to update my mailing address.
