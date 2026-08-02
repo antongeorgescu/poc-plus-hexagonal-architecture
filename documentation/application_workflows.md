@@ -78,18 +78,46 @@ boundary the application applies internally, drawn one system further out.
 
 ```mermaid
 flowchart TD
-    A["/login — LoginComponent"] --> B["AuthenticateService<br/>via UserRepositoryPort (users.csv)"]
+    A["/login · LoginComponent"] --> B["AuthenticateService<br/>via UserRepositoryPort"]
     B -->|credentials rejected| A
-    B -->|User stored in SessionStore| C{authGuard}
+    B -->|"User → SessionStore"| C{authGuard}
     C -->|not authenticated| A
     C -->|authenticated| D["/dashboard"]
+
     D --> E["PersonalizationPort 🤖<br/>agentic summarization → welcome copy"]
     D --> F["AccountSummaryPort 🤖<br/>agentic summarization → loan + payment prose"]
     D --> G["ChatInsightsPort 🤖<br/>agentic retrieval + sentiment analysis"]
-    D --> H["Borrower types a question"]
-    H --> I["InquiryPort.classify<br/>category + deterministic flag + label"]
-    I --> J["@switch renders the answer component"]
-    J --> K["Component fetches its own authoritative<br/>numbers via the deterministic ports"]
+    D --> H(["Borrower types a question"])
+
+    H --> I["InquiryPort.classify(text)"]
+    I --> J["LanguageModelPort 🤖<br/>AzureAiLanguageModel · Chat Completions<br/>PROPOSES one of 8 labels — or NONE"]
+    J -->|"a label"| K
+    J -->|"NONE / unrecognised → null"| K["InquiryService stamps<br/>DETERMINISM_POLICY + CATEGORY_LABEL<br/><i>the model never sees this map</i>"]
+    K --> S{"@switch on category"}
+
+    S --> P1["NEXT_PAYMENT<br/>NextPaymentComponent"]
+    S --> P2["LOAN_BALANCE<br/>LoanBalanceComponent"]
+    S --> P3["EXTRA_PAYMENT<br/>MakePaymentComponent"]
+    S --> P4["PROFILE_UPDATE<br/>UpdateProfileComponent"]
+    S --> P5["HARDSHIP<br/>JobOpportunitiesComponent"]
+    S --> P6["LIFE_EVENT<br/>InterestReliefComponent"]
+    S --> P7["REPAYMENT_OPTIONS<br/>RepaymentOptionsComponent"]
+    S --> P8["GENERAL · @default<br/>GeneralHelpComponent"]
+
+    P1 --> ZB
+    P2 --> ZB
+    P3 --> ZB
+    P4 --> ZB["deterministic = true<br/>“Standard response · same for all borrowers”<br/>every figure from PaymentPort / LoanInfoPort / ProfilePort"]
+    P5 --> ZC
+    P6 --> ZC
+    P7 --> ZC
+    P8 --> ZC["deterministic = false<br/>“Personalized for your account” + 🤖 badge<br/>grounding &amp; narration — any figure still from a BLL port"]
+
+    classDef bll fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    classDef cll fill:#f3e8ff,stroke:#7c3aed,color:#4c1d95;
+    class P1,P2,P3,P4,ZB bll;
+    class P5,P6,P7,P8,ZC cll;
+    class E,F,G,J cll;
 ```
 
 1. **Login** — `/login`. Credentials are checked by `AuthenticateService` against
@@ -102,11 +130,27 @@ flowchart TD
    `AccountSummaryPort` (loan and payment narration), and `ChatInsightsPort`
    (conversation retrieval + sentiment). See
    [AI in the cognitive ports](#ai-in-the-cognitive-ports).
-4. **Ask** — free text goes to `InquiryPort.classify`, which returns a category,
-   the fixed `deterministic` flag, and a display label.
-5. **Render** — the dashboard's `@switch` selects the matching answer component.
-6. **Answer** — that component fetches its own authoritative values through the
-   deterministic driving ports. The cognitive region never computes them.
+4. **Ask — the model reads the question.** Free text goes to
+   `InquiryPort.classify`, which asks `LanguageModelPort` to **propose** exactly
+   one of the eight labels, or reply `NONE`. Behind that port sits
+   `AzureAiLanguageModel`, a Chat Completions call constrained to the allow-list
+   — it *interprets intent*, so paraphrases, typos and unusual phrasings resolve
+   without anyone having enumerated them. A reply outside the allow-list is
+   normalised to `null`: model noise, not a proposal.
+5. **Stamp — the business rules on it.** `InquiryService` turns `null` into
+   `GENERAL`, then attaches the `deterministic` flag from `DETERMINISM_POLICY`
+   and the display label. The model has no visibility of that map and cannot move
+   a topic across the line.
+6. **Fork — eight ways out.** The dashboard's `@switch` routes to one of eight
+   components: four deterministic, three cognitive, plus `GENERAL` on `@default`.
+7. **Answer.** Deterministic components fetch their own authoritative values from
+   the BLL driving ports. Cognitive ones ground and narrate — and even they read
+   every figure from a BLL port, never from the model.
+
+> The keyword classifier still ships as `MockLanguageModel`, but only as the
+> offline fallback: it answers when no Azure credentials are configured and
+> whenever a live call times out or fails. See the implementation-status note at
+> the end of [AI in the cognitive ports](#ai-in-the-cognitive-ports).
 
 ## AI in the cognitive ports
 
