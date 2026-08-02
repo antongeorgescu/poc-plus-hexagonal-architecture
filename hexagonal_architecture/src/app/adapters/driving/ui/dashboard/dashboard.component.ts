@@ -25,6 +25,16 @@ import { GeneralHelpComponent } from '../inquiry/general-help.component';
 import { AccountSummaryComponent } from '../summary/account-summary.component';
 import { ChatInsightsComponent } from '../summary/chat-insights.component';
 
+/**
+ * Are these the same question, ignoring case, padding and trailing punctuation?
+ * Used to decide whether a repeat ask should scroll to the existing card.
+ */
+function sameQuestion(a: string, b: string): boolean {
+  const norm = (t: string) =>
+    t.toLowerCase().replace(/\s+/g, ' ').replace(/[?!.\s]+$/, '').trim();
+  return norm(a) === norm(b);
+}
+
 /** One answered inquiry in the dashboard history. */
 interface InquiryEntry {
   id: number;
@@ -110,8 +120,21 @@ export class DashboardComponent {
       // CLL proposes the category; the answer components obtain the numbers.
       const result = await this.inquiry.classify(query);
 
+      // De-duplicate, but only where a second card would genuinely be a copy.
+      //
+      // A DETERMINISTIC topic renders the same component with the same figures
+      // however the borrower phrased it, so re-asking scrolls to the card that
+      // is already on screen.
+      //
+      // A NON-deterministic topic must compare the QUESTION, not just the
+      // category. GENERAL in particular is the catch-all for anything the
+      // classifier could not place — collapsing on category alone silently
+      // swallowed every unmatched question after the first, scrolling the
+      // borrower back to someone else's question instead of answering theirs.
       const existing = this.entries().find(
-        (e) => e.result.category === result.category
+        (e) =>
+          e.result.category === result.category &&
+          (result.deterministic || sameQuestion(e.query, query))
       );
       if (existing) {
         this.scrollToEntry(existing.id);
