@@ -1,7 +1,0 @@
-/dist
-/node_modules
-/.angular
-/out-tsc
-*.log
-.DS_Store
-Thumbs.db
