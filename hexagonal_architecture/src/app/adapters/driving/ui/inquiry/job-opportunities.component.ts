@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
-import { JobPosting } from '../../../../core/domain/inquiry';
+import { JobPosting } from '../../../../core/domain/job-posting.vocabulary';
 import { InquiryPort } from '../../../../ports/driving/inquiry.port';
 import { INQUIRY_PORT } from '../../../../configuration/tokens';
 

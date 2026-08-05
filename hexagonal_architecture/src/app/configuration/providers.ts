@@ -23,17 +23,17 @@ import { AzureAiLanguageModel } from '../adapters/driven/azure-ai-language-model
 import { resolveAiConfig, toAzureOptions, usesAzure } from './ai.config';
 
 // Core · deterministic region (implement the BLL driving ports)
-import { AuthenticateService } from '../core/application/authenticate.service';
-import { PaymentService } from '../core/application/payment.service';
-import { LoanInfoService } from '../core/application/loan-info.service';
-import { ProfileService } from '../core/application/profile.service';
-import { EligibilityService } from '../core/application/eligibility.service';
+import { AuthenticateService } from '../core/application/authenticate.usecase';
+import { PaymentService } from '../core/application/payment.usecase';
+import { LoanInfoService } from '../core/application/loan-info.usecase';
+import { ProfileService } from '../core/application/profile.usecase';
+import { EligibilityService } from '../core/application/eligibility.usecase';
 
 // Core · cognitive region (implement the CLL driving ports)
-import { InquiryService } from '../core/cognitive/inquiry.service';
-import { PersonalizationService } from '../core/cognitive/personalization.service';
-import { ChatInsightsService } from '../core/cognitive/chat-insights.service';
-import { AccountSummaryService } from '../core/cognitive/account-summary.service';
+import { InquiryService } from '../core/cognitive/inquiry.policy';
+import { PersonalizationService } from '../core/cognitive/personalization.policy';
+import { ChatInsightsService } from '../core/cognitive/chat-insights.policy';
+import { AccountSummaryService } from '../core/cognitive/account-summary.policy';
 
 // Port interfaces (for typing the factory dependencies)
 import { UserRepositoryPort } from '../ports/driven/user-repository.port';

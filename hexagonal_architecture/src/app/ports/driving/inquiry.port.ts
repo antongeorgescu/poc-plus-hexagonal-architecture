@@ -6,7 +6,23 @@
  * classified into a topic. The returned `deterministic` flag comes from a FIXED
  * business policy inside the cognitive region — never from the model.
  */
-import { InquiryResult, JobPosting } from '../../core/domain/inquiry';
+import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
+import { JobPosting } from '../../core/domain/job-posting.vocabulary';
+
+/**
+ * What a classification yields. Declared HERE because this port is its only
+ * producer — the same way ChatInsightsPort declares ChatInsights.
+ *
+ * `deterministic` is stamped from a FIXED business policy in
+ * `core/cognitive/inquiry.policy.ts`, never decided by the model.
+ */
+export interface InquiryResult {
+  category: InquiryCategory;
+  /** True when the response components are identical for every user type. */
+  deterministic: boolean;
+  /** Short human-readable label, e.g. for headers/breadcrumbs. */
+  label: string;
+}
 import { User } from '../../core/domain/user.entity';
 
 export interface InquiryPort {

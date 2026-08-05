@@ -18,14 +18,28 @@
  * Azure now satisfy the same shape, so the composition root chooses between them
  * and nothing inside the hexagon knows which one it got.
  */
-import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
-import { SentimentLabel } from '../../core/domain/sentiment';
+import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
+import { SentimentLabel } from '../../core/domain/sentiment.vocabulary';
 import { User } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';
 import { PaymentSnapshot } from '../../core/domain/payment.entity';
 
 /** Welcome copy — prose only; the cognitive region adds the theme policy. */
+/**
+ * A category offered to the model for semantic matching: the label to return
+ * plus a business-owned description of what the topic MEANS.
+ *
+ * Declared on this port because this port is its only consumer. The
+ * descriptions themselves are authored in the core
+ * (`core/cognitive/inquiry.policy.ts`) and travel with each request, so no
+ * adapter holds a copy of the taxonomy.
+ */
+export interface CategoryDescriptor {
+  category: InquiryCategory;
+  description: string;
+}
+
 export interface WelcomeCopy {
   greeting: string;
   question: string;

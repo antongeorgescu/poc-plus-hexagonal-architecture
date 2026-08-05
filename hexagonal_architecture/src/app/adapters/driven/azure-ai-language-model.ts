@@ -19,9 +19,13 @@
  *     unusable payload delegates to the injected fallback (the mock), so the POC
  *     runs identically with no credentials, no network, or a cold Azure resource.
  */
-import { LanguageModelPort, WelcomeCopy } from '../../ports/driven/language-model.port';
-import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
-import { SentimentLabel } from '../../core/domain/sentiment';
+import {
+  CategoryDescriptor,
+  LanguageModelPort,
+  WelcomeCopy,
+} from '../../ports/driven/language-model.port';
+import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
+import { SentimentLabel } from '../../core/domain/sentiment.vocabulary';
 import { User } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';

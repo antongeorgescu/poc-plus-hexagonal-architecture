@@ -34,6 +34,27 @@ no port at all.</sub>
 
 ## Layering (folders under `src/app/`)
 
+**File-suffix convention.** Each region of the core names its files after what
+they *hold*, so a misplaced file is visible in a directory listing:
+
+| Suffix | Region | Holds |
+|---|---|---|
+| `*.entity.ts` | `core/domain` | Invariants and money math. Enterprise rules that outlive the application. |
+| `*.usecase.ts` | `core/application` | The deterministic (BLL) region. One authoritative use case per driving port. |
+| `*.policy.ts` | `core/cognitive` | The cognitive (CLL) region. The rules governing what a model proposal is *allowed to mean* — the determinism map, the sentiment bands, the theme policy, the aggregation rule. |
+| `*.utility.ts` | anywhere in the core | Pure, stateless helpers that belong to no rule and decide nothing — e.g. `date.utility.ts` parses `yyyy-MM-dd` as a local calendar date. |
+| `*.vocabulary.ts` | `core/domain` | **Shared kernel.** Declarations that cross rings and carry no rule of their own — the topic taxonomy, the sentiment labels, the job-posting shape. |
+
+The test is falsifiable in each case: a file in `domain/` with no invariant, or
+in `cognitive/` that owns no named policy, is in the wrong place.
+
+> **Why `*.vocabulary.ts` is not `*.entity.ts`.** These declarations would not
+> exist without *this application* — a batch statement generator over the same
+> loans has no notion of an "inquiry category". They fail the entity test, and
+> they sit in `domain/` for a structural reason rather than a conceptual one: it
+> is the innermost ring, so every other ring may depend on it without a cycle.
+> Calling them a shared kernel says that honestly.
+
 ```
 src/app/
 ├── core/                         # THE HEXAGON — pure TypeScript, ZERO @angular
@@ -43,24 +64,28 @@ src/app/
 │   │   ├── payment.entity.ts     #   snapshot, payoff, validation, references
 │   │   ├── borrower.entity.ts    #   profile, standing, contact validation
 │   │   ├── eligibility.entity.ts #   rate-relief decision + money math
-│   │   ├── inquiry.ts            #   shared vocabulary (category enum, job posting)
-│   │   └── sentiment.ts          #   shared vocabulary (sentiment label + tone)
+│   │   ├── date.utility.ts       #   parses yyyy-MM-dd as a LOCAL calendar date
+│   │   ├── inquiry.vocabulary.ts #   shared kernel — the topic taxonomy
+│   │   ├── job-posting.vocabulary.ts #  shared kernel — crosses the whole hexagon
+│   │   └── sentiment.vocabulary.ts   #  shared kernel — sentiment label + tone
 │   ├── application/              # DETERMINISTIC region (BLL) — implements the BLL driving ports
-│   │   ├── authenticate.service.ts   #   implements AuthenticatePort, needs UserRepositoryPort
-│   │   ├── payment.service.ts        #   implements PaymentPort
-│   │   ├── loan-info.service.ts      #   implements LoanInfoPort
-│   │   ├── profile.service.ts        #   implements ProfilePort
-│   │   └── eligibility.service.ts    #   implements EligibilityPort
+│   │   ├── authenticate.usecase.ts   #   implements AuthenticatePort, needs UserRepositoryPort
+│   │   ├── payment.usecase.ts        #   implements PaymentPort
+│   │   ├── loan-info.usecase.ts      #   implements LoanInfoPort
+│   │   ├── profile.usecase.ts        #   implements ProfilePort
+│   │   └── eligibility.usecase.ts    #   implements EligibilityPort
 │   └── cognitive/                # COGNITIVE region (CLL) — implements the CLL driving ports.
 │       │                         #   Core logic, NOT an adapter: it holds policy, no technology.
 │       │                         #   Reaches the BLL only through BLL driving ports; reaches the
 │       │                         #   model only through LanguageModelPort.
-│       ├── inquiry.service.ts         # owns the FIXED determinism map + topic labels
-│       ├── personalization.service.ts # owns the theme policy
-│       ├── chat-insights.service.ts   # owns the sentiment bands
-│       └── account-summary.service.ts # owns the aggregation policy (profile+loan+payment)
+│       ├── inquiry.policy.ts          # owns the FIXED determinism map + topic labels
+│       ├── personalization.policy.ts  # owns the theme policy
+│       ├── chat-insights.policy.ts    # owns the sentiment bands
+│       └── account-summary.policy.ts  # owns the aggregation policy (profile+loan+payment)
 │
 ├── ports/                        # THE BOUNDARY — pure TypeScript interfaces, ZERO @angular
+│                                 #   Each port DECLARES the DTOs it alone owns
+│                                 #   (InquiryResult, CategoryDescriptor, AccountSummary, …)
 │   ├── driving/                  #   inbound / primary ports — what the core EXPOSES
 │   │   ├── authenticate.port.ts  #     AuthenticatePort      ─┐
 │   │   ├── payment.port.ts       #     PaymentPort            │ deterministic

@@ -4,7 +4,7 @@
  * CLL) may narrate these numbers but structurally cannot compute them.
  */
 import { User } from './user.entity';
-import { parseIsoDate } from './date';
+import { parseIsoDate } from './date.utility';
 
 export interface LoanInfo {
   originalAmount: number;

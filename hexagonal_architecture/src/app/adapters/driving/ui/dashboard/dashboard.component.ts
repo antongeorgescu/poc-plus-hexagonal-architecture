@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { SessionStore } from '../../../../configuration/session.store';
 import { INQUIRY_PORT, PERSONALIZATION_PORT } from '../../../../configuration/tokens';
 import { WelcomeContent } from '../../../../ports/driving/personalization.port';
-import { InquiryResult } from '../../../../core/domain/inquiry';
+import { InquiryResult } from '../../../../ports/driving/inquiry.port';
 import { USER_TYPE_LABEL } from '../../../../core/domain/user.entity';
 
 // Answer components

@@ -18,13 +18,17 @@
  * AzureAiLanguageModel delegates to whenever a live call fails, so the POC keeps
  * working with no credentials and no network.
  */
-import { LanguageModelPort, WelcomeCopy } from '../../ports/driven/language-model.port';
-import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
-import { SentimentLabel } from '../../core/domain/sentiment';
+import {
+  CategoryDescriptor,
+  LanguageModelPort,
+  WelcomeCopy,
+} from '../../ports/driven/language-model.port';
+import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
+import { SentimentLabel } from '../../core/domain/sentiment.vocabulary';
 import { User, UserType } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';
-import { parseIsoDate } from '../../core/domain/date';
+import { parseIsoDate } from '../../core/domain/date.utility';
 import { PaymentSnapshot } from '../../core/domain/payment.entity';
 
 interface CategoryRule {
