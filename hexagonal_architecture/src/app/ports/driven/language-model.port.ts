@@ -18,7 +18,7 @@
  * Azure now satisfy the same shape, so the composition root chooses between them
  * and nothing inside the hexagon knows which one it got.
  */
-import { InquiryCategory } from '../../core/domain/inquiry';
+import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
 import { SentimentLabel } from '../../core/domain/sentiment';
 import { User } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
@@ -36,8 +36,17 @@ export interface LanguageModelPort {
   /**
    * PROPOSE a topic for free text, or null when nothing matches. The cognitive
    * region decides what a proposal is allowed to mean.
+   *
+   * `candidates` carries each selectable category together with a business-owned
+   * description of the topic. A semantic adapter matches the borrower's wording
+   * against those descriptions; a keyword adapter is free to ignore them
+   * entirely. Either way the CORE owns the taxonomy and its meanings — the
+   * adapter never holds its own copy of the category list.
    */
-  classifyInquiry(text: string): Promise<InquiryCategory | null>;
+  classifyInquiry(
+    text: string,
+    candidates: readonly CategoryDescriptor[]
+  ): Promise<InquiryCategory | null>;
 
   /** Phrase an ALREADY-COMPUTED loan fact set. Words only — no arithmetic. */
   narrateLoan(profile: BorrowerProfile, loan: LoanInfo): Promise<string>;

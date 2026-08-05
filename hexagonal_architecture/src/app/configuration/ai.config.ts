@@ -54,16 +54,34 @@ declare global {
 }
 
 /**
+ * The query string as it was when the app booted.
+ *
+ * WHY CAPTURED EAGERLY: `resolveAiConfig()` runs inside an Angular `useFactory`,
+ * which Angular evaluates LAZILY — the first time `LANGUAGE_MODEL_PORT` is
+ * injected, which is on the dashboard. By then the router has navigated
+ * `/?ai=proxy` → `/login?ai=proxy` → `/dashboard` and **dropped the query
+ * string**, so reading `location.search` at that point always saw `''` and the
+ * `?ai=` override silently never applied. This module is imported by the
+ * composition root, so it loads during bootstrap while the parameter is intact.
+ */
+const BOOT_SEARCH = typeof window !== 'undefined' ? window.location.search : '';
+
+/** Resolved once: every consumer must see the same runtime for the session. */
+let cached: AiConfig | null = null;
+
+/**
  * Resolve the effective config: defaults, then any `window.__AI_CONFIG__`, then
  * a `?ai=` query override so the two runtimes can be demonstrated side by side
  * without a rebuild (`?ai=mock` / `?ai=proxy`).
  */
 export function resolveAiConfig(): AiConfig {
+  if (cached) return cached;
+
   const runtime = (typeof window !== 'undefined' && window.__AI_CONFIG__) || {};
   const cfg: AiConfig = { ...DEFAULTS, ...runtime };
 
-  if (typeof window !== 'undefined') {
-    const q = new URLSearchParams(window.location.search).get('ai');
+  {
+    const q = new URLSearchParams(BOOT_SEARCH).get('ai');
     if (q === 'mock' || q === 'proxy' || q === 'directKey') cfg.mode = q;
   }
 
@@ -77,6 +95,7 @@ export function resolveAiConfig(): AiConfig {
     console.warn('[ai.config] mode="directKey" but no apiKey supplied — calls will fail and fall back to the mock.');
   }
 
+  cached = cfg;
   return cfg;
 }
 

@@ -20,7 +20,7 @@
  *     runs identically with no credentials, no network, or a cold Azure resource.
  */
 import { LanguageModelPort, WelcomeCopy } from '../../ports/driven/language-model.port';
-import { InquiryCategory } from '../../core/domain/inquiry';
+import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
 import { SentimentLabel } from '../../core/domain/sentiment';
 import { User } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
@@ -54,18 +54,6 @@ interface ChatMessage {
   content: string;
 }
 
-/** The only labels the model is permitted to propose. Mirrors InquiryCategory. */
-const CATEGORIES: InquiryCategory[] = [
-  'NEXT_PAYMENT',
-  'LOAN_BALANCE',
-  'EXTRA_PAYMENT',
-  'PROFILE_UPDATE',
-  'HARDSHIP',
-  'LIFE_EVENT',
-  'REPAYMENT_OPTIONS',
-  'GENERAL',
-];
-
 /** Shared guardrail prepended to every narration prompt. */
 const NARRATION_RULES =
   'You write one short paragraph of plain, warm, second-person prose for a student-loan ' +
@@ -83,35 +71,52 @@ export class AzureAiLanguageModel implements LanguageModelPort {
 
   // ---------------------------------------------------------------- proposals
 
-  async classifyInquiry(text: string): Promise<InquiryCategory | null> {
+  /**
+   * SEMANTIC matching. The candidate list and its descriptions arrive from the
+   * core; this adapter holds no copy of the taxonomy and no hand-written
+   * tiebreak rules. The model is asked to judge which description best fits the
+   * borrower's wording — so adding a category, or sharpening what one means,
+   * is an edit in the core and needs no change here.
+   *
+   * `temperature: 0` because this is a matching task, not a creative one: the
+   * same wording against the same descriptions should yield the same label.
+   */
+  async classifyInquiry(
+    text: string,
+    candidates: readonly CategoryDescriptor[]
+  ): Promise<InquiryCategory | null> {
+    // No candidates means nothing to match against — abstain rather than guess.
+    if (candidates.length === 0) return null;
+
+    const catalogue = candidates
+      .map((c) => `${c.category}: ${c.description}`)
+      .join('\n');
+
     const system =
-      'You classify a student-loan borrower message into exactly one label from ' +
-      `this list: ${CATEGORIES.join(', ')}. ` +
-      'Reply with the label alone — no punctuation, quotes, or explanation. ' +
-      'If none clearly applies, reply exactly NONE. ' +
-      'EXTRA_PAYMENT outranks LOAN_BALANCE when the borrower wants to pay something; ' +
-      'LOAN_BALANCE is for asking what is owed or when the loan matures. ' +
-      'REPAYMENT_OPTIONS is for exploring scenarios and qualifying conditions — ' +
-      'paying the loan off faster, what repayment assistance requires, or what it ' +
-      'takes to get an interest-rate reduction. Prefer LIFE_EVENT when the message ' +
-      'mentions a life event such as a new child; prefer HARDSHIP when the borrower ' +
-      'says they are struggling or cannot pay.';
+      'You match a student-loan borrower message to the ONE topic whose ' +
+      'description fits it best. Judge by meaning, not by shared words — the ' +
+      'borrower will phrase things in their own way, and may make typos.\n\n' +
+      `TOPICS\n${catalogue}\n\n` +
+      'Reply with the topic label alone — no punctuation, quotes or explanation. ' +
+      'If no description is a good fit, reply exactly NONE. Prefer NONE over a ' +
+      'weak match: a wrong topic shows the borrower the wrong screen.';
 
     const raw = await this.complete(
       [
         { role: 'system', content: system },
         { role: 'user', content: text },
       ],
-      { maxTokens: 8, temperature: 0 }
+      { maxTokens: 12, temperature: 0 }
     );
 
-    if (raw === null) return this.fallback.classifyInquiry(text);
+    if (raw === null) return this.fallback.classifyInquiry(text, candidates);
 
     const answer = raw.trim().toUpperCase().replace(/[^A-Z_]/g, '');
     if (answer === 'NONE' || answer === '') return null; // a real "no opinion"
-    const match = CATEGORIES.find((c) => c === answer);
+    // Validate against what the CORE offered, never against a local list.
+    const match = candidates.find((c) => c.category === answer);
     // An unrecognised label is model noise, not a proposal. Say nothing.
-    return match ?? null;
+    return match?.category ?? null;
   }
 
   // --------------------------------------------------------------- narration

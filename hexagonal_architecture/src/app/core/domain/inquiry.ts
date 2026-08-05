@@ -23,6 +23,19 @@ export interface InquiryResult {
   label: string;
 }
 
+/**
+ * A category offered to the model for semantic matching: the label to return
+ * plus a business-owned description of what the topic MEANS.
+ *
+ * The description is the matching signal. It exists so the taxonomy's semantics
+ * live in the core with the business, not inside a prompt string in an adapter —
+ * add a category and its meaning travels with it automatically.
+ */
+export interface CategoryDescriptor {
+  category: InquiryCategory;
+  description: string;
+}
+
 /** A single job posting from the knowledge base (grounding source). */
 export interface JobPosting {
   title: string;

@@ -12,7 +12,12 @@
  * if the model proposes a wrong category, it cannot promote a topic to
  * deterministic or demote one out of it.
  */
-import { InquiryCategory, InquiryResult, JobPosting } from '../domain/inquiry';
+import {
+  CategoryDescriptor,
+  InquiryCategory,
+  InquiryResult,
+  JobPosting,
+} from '../domain/inquiry';
 import { User } from '../domain/user.entity';
 import { InquiryPort } from '../../ports/driving/inquiry.port';
 import { LanguageModelPort } from '../../ports/driven/language-model.port';
@@ -50,6 +55,63 @@ const CATEGORY_LABEL: Record<InquiryCategory, string> = {
   GENERAL: 'General help',
 };
 
+/**
+ * Business-owned MEANING of each topic. This is the signal a semantic classifier
+ * matches the borrower's wording against, so it belongs here beside the labels
+ * and the determinism policy — not inside a prompt string in an adapter.
+ *
+ * Write these as discriminators, not definitions: each one should say what makes
+ * the topic different from its nearest neighbour, because that is the decision
+ * the model is actually being asked to make.
+ */
+const CATEGORY_DESCRIPTION: Record<InquiryCategory, string> = {
+  NEXT_PAYMENT:
+    'The amount and due date of the single upcoming instalment. The borrower is ' +
+    'asking when to pay next and how much — not about the total owed.',
+  LOAN_BALANCE:
+    'What is currently owed and when the loan ends: outstanding balance, payoff ' +
+    'amount, interest rate, proportion repaid, maturity date. The borrower is ' +
+    'ASKING about figures, not trying to pay anything.',
+  EXTRA_PAYMENT:
+    'The borrower wants to MAKE a payment now — an extra or additional payment, ' +
+    'paying down principal, or a lump sum. An intention to act, not an enquiry. ' +
+    'Choose this over LOAN_BALANCE whenever the borrower wants to pay rather ' +
+    'than to know.',
+  PROFILE_UPDATE:
+    'Changing the contact details held on file — email address, phone number or ' +
+    'mailing address — including after moving house.',
+  HARDSHIP:
+    'The borrower is in financial distress or fears it: job loss, cannot afford ' +
+    'the payments, expects to miss payments, or is asking what help exists. The ' +
+    'defining signal is present or imminent inability to pay.',
+  LIFE_EVENT:
+    'A personal life event that may change what the borrower is entitled to — a ' +
+    'new child, marriage, or returning to study — usually asked as whether the ' +
+    'event qualifies them for relief. Choose this over REPAYMENT_OPTIONS ' +
+    'whenever a life event is mentioned.',
+  REPAYMENT_OPTIONS:
+    'Exploring scenarios and qualifying conditions while NOT in distress: how to ' +
+    'pay the loan off faster, how much extra that would take, what repayment ' +
+    'assistance requires, or what it takes to obtain an interest-rate reduction. ' +
+    'Choose HARDSHIP instead if the borrower says they cannot pay.',
+  GENERAL:
+    'Anything that does not clearly match another topic. Never offered to the ' +
+    'classifier as a choice — it is what the core falls back to when the model ' +
+    'declines to match.',
+};
+
+/**
+ * What the classifier may choose from. GENERAL is deliberately EXCLUDED: it is
+ * the absence of a match, not a match. Offering it would let the model "pick"
+ * the fallback and destroy the distinction between a proposal and an abstention,
+ * which is the signal this layer relies on.
+ */
+const MATCHABLE_CATEGORIES: readonly CategoryDescriptor[] = (
+  Object.keys(CATEGORY_DESCRIPTION) as InquiryCategory[]
+)
+  .filter((c) => c !== 'GENERAL')
+  .map((category) => ({ category, description: CATEGORY_DESCRIPTION[category] }));
+
 export class InquiryService implements InquiryPort {
   constructor(
     private readonly languageModel: LanguageModelPort,
@@ -61,7 +123,12 @@ export class InquiryService implements InquiryPort {
     // proposal is worth and stamps the fixed policy onto it. Awaiting a remote
     // model changes NOTHING about who decides: an unusable proposal still
     // collapses to GENERAL, and the determinism policy below is still ours.
-    const category = (await this.languageModel.classifyInquiry(text)) ?? 'GENERAL';
+    // The candidate list travels WITH the request, so the adapter never keeps a
+     // copy of the taxonomy. A semantic adapter matches the wording against each
+     // description; the keyword adapter ignores them. Either way an abstention
+     // (null) collapses to GENERAL here, in the core.
+    const category =
+      (await this.languageModel.classifyInquiry(text, MATCHABLE_CATEGORIES)) ?? 'GENERAL';
 
     return {
       category,

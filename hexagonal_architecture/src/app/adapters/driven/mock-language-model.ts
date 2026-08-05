@@ -19,7 +19,7 @@
  * working with no credentials and no network.
  */
 import { LanguageModelPort, WelcomeCopy } from '../../ports/driven/language-model.port';
-import { InquiryCategory } from '../../core/domain/inquiry';
+import { CategoryDescriptor, InquiryCategory } from '../../core/domain/inquiry';
 import { SentimentLabel } from '../../core/domain/sentiment';
 import { User, UserType } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
@@ -127,7 +127,16 @@ export class MockLanguageModel implements LanguageModelPort {
     },
   ];
 
-  async classifyInquiry(text: string): Promise<InquiryCategory | null> {
+  /**
+   * Keyword matching only. The `candidates` descriptions are accepted to satisfy
+   * the port and then IGNORED — semantic matching is a capability of the live
+   * model, not of this stub. Mock-mode behaviour is therefore unchanged by the
+   * introduction of descriptions.
+   */
+  async classifyInquiry(
+    text: string,
+    _candidates?: readonly CategoryDescriptor[]
+  ): Promise<InquiryCategory | null> {
     for (const rule of this.rules) {
       if (rule.keywords.some((k) => k.test(text))) return rule.category;
     }
