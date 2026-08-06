@@ -18,8 +18,8 @@
  * Azure now satisfy the same shape, so the composition root chooses between them
  * and nothing inside the hexagon knows which one it got.
  */
-import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
-import { SentimentLabel } from '../../core/domain/sentiment.vocabulary';
+import { InquiryCategory } from '../../core/domain/inquiry.type';
+import { SentimentLabel } from '../../core/domain/sentiment.type';
 import { User } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';
@@ -32,7 +32,7 @@ import { PaymentSnapshot } from '../../core/domain/payment.entity';
  *
  * Declared on this port because this port is its only consumer. The
  * descriptions themselves are authored in the core
- * (`core/cognitive/inquiry.policy.ts`) and travel with each request, so no
+ * (`core/cognitive/inquiry.service.ts`) and travel with each request, so no
  * adapter holds a copy of the taxonomy.
  */
 export interface CategoryDescriptor {

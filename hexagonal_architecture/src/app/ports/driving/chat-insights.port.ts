@@ -7,7 +7,7 @@
  * a deterministic decision.
  */
 import { User } from '../../core/domain/user.entity';
-import { SentimentLabel, SentimentTone } from '../../core/domain/sentiment.vocabulary';
+import { SentimentLabel, SentimentTone } from '../../core/domain/sentiment.type';
 
 export interface ChatSentiment {
   /** 0 (very negative) .. 100 (very positive) — raw grounding signal. */

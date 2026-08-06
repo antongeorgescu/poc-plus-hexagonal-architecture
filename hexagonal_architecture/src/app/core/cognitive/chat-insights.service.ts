@@ -11,7 +11,7 @@
 import { ChatInsights, ChatInsightsPort, ChatSentiment } from '../../ports/driving/chat-insights.port';
 import { ChatHistoryPort } from '../../ports/driven/chat-history.port';
 import { LanguageModelPort } from '../../ports/driven/language-model.port';
-import { SentimentLabel, SentimentTone } from '../domain/sentiment.vocabulary';
+import { SentimentLabel, SentimentTone } from '../domain/sentiment.type';
 import { User } from '../domain/user.entity';
 
 /** Business-owned bands, highest first. Not the model's call. */

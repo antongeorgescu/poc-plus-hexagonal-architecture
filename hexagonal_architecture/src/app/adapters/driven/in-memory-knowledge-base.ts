@@ -4,7 +4,7 @@
  * catalog); it computes no money and decides no eligibility.
  */
 import { KnowledgeBasePort } from '../../ports/driven/knowledge-base.port';
-import { JobPosting } from '../../core/domain/job-posting.vocabulary';
+import { JobPosting } from '../../core/domain/job-posting.type';
 
 export class InMemoryKnowledgeBase implements KnowledgeBasePort {
   getJobsForProgram(program: string, location: string): JobPosting[] {

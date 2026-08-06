@@ -12,8 +12,8 @@
  * if the model proposes a wrong category, it cannot promote a topic to
  * deterministic or demote one out of it.
  */
-import { InquiryCategory } from '../domain/inquiry.vocabulary';
-import { JobPosting } from '../domain/job-posting.vocabulary';
+import { InquiryCategory } from '../domain/inquiry.type';
+import { JobPosting } from '../domain/job-posting.type';
 import { User } from '../domain/user.entity';
 import { InquiryPort, InquiryResult } from '../../ports/driving/inquiry.port';
 import {

@@ -6,7 +6,7 @@
  * region, both port sides, and both model adapters all name it. It carries no
  * rule of its own: what a category *means* lives in `CATEGORY_DESCRIPTION`, and
  * what it *earns* lives in `DETERMINISM_POLICY`, both in
- * `core/cognitive/inquiry.policy.ts`.
+ * `core/cognitive/inquiry.service.ts`.
  *
  * The shapes that used to live here now sit with the port that owns them:
  *   · InquiryResult      → ports/driving/inquiry.port.ts

@@ -40,20 +40,25 @@ they *hold*, so a misplaced file is visible in a directory listing:
 | Suffix | Region | Holds |
 |---|---|---|
 | `*.entity.ts` | `core/domain` | Invariants and money math. Enterprise rules that outlive the application. |
-| `*.usecase.ts` | `core/application` | The deterministic (BLL) region. One authoritative use case per driving port. |
-| `*.policy.ts` | `core/cognitive` | The cognitive (CLL) region. The rules governing what a model proposal is *allowed to mean* — the determinism map, the sentiment bands, the theme policy, the aggregation rule. |
+| `*.type.ts` | `core/domain` | **Shared kernel.** Declarations that cross rings and carry no rule of their own — the topic taxonomy, the sentiment labels, the job-posting shape. |
 | `*.utility.ts` | anywhere in the core | Pure, stateless helpers that belong to no rule and decide nothing — e.g. `date.utility.ts` parses `yyyy-MM-dd` as a local calendar date. |
-| `*.vocabulary.ts` | `core/domain` | **Shared kernel.** Declarations that cross rings and carry no rule of their own — the topic taxonomy, the sentiment labels, the job-posting shape. |
+| `*.service.ts` | `core/application` **and** `core/cognitive` | A service implementing one driving port. **The folder, not the suffix, says which region it belongs to** — `application/` is deterministic (BLL), `cognitive/` proposes and phrases (CLL). |
 
-The test is falsifiable in each case: a file in `domain/` with no invariant, or
-in `cognitive/` that owns no named policy, is in the wrong place.
+The test is falsifiable for the first three: a file in `domain/` with no
+invariant is in the wrong place, and one holding only declarations is a
+`*.type.ts`, not an `*.entity.ts`.
 
-> **Why `*.vocabulary.ts` is not `*.entity.ts`.** These declarations would not
-> exist without *this application* — a batch statement generator over the same
-> loans has no notion of an "inquiry category". They fail the entity test, and
-> they sit in `domain/` for a structural reason rather than a conceptual one: it
-> is the innermost ring, so every other ring may depend on it without a cycle.
-> Calling them a shared kernel says that honestly.
+> **Why `*.type.ts` is not `*.entity.ts`.** These declarations would not exist
+> without *this application* — a batch statement generator over the same loans
+> has no notion of an "inquiry category". They fail the entity test, and they sit
+> in `domain/` for a structural reason rather than a conceptual one: it is the
+> innermost ring, so every other ring may depend on it without a cycle. Calling
+> them a shared kernel says that honestly.
+
+> **Note on `*.service.ts`.** Both core regions use it, so the suffix alone does
+> not tell you whether a file is authoritative. Read the folder: everything in
+> `core/application` decides, everything in `core/cognitive` proposes. The
+> distinction that matters is enforced by the ports, not by the filename.
 
 ```
 src/app/
@@ -65,23 +70,23 @@ src/app/
 │   │   ├── borrower.entity.ts    #   profile, standing, contact validation
 │   │   ├── eligibility.entity.ts #   rate-relief decision + money math
 │   │   ├── date.utility.ts       #   parses yyyy-MM-dd as a LOCAL calendar date
-│   │   ├── inquiry.vocabulary.ts #   shared kernel — the topic taxonomy
-│   │   ├── job-posting.vocabulary.ts #  shared kernel — crosses the whole hexagon
-│   │   └── sentiment.vocabulary.ts   #  shared kernel — sentiment label + tone
+│   │   ├── inquiry.type.ts       #   shared kernel — the topic taxonomy
+│   │   ├── job-posting.type.ts   #   shared kernel — crosses the whole hexagon
+│   │   └── sentiment.type.ts     #   shared kernel — sentiment label + tone
 │   ├── application/              # DETERMINISTIC region (BLL) — implements the BLL driving ports
-│   │   ├── authenticate.usecase.ts   #   implements AuthenticatePort, needs UserRepositoryPort
-│   │   ├── payment.usecase.ts        #   implements PaymentPort
-│   │   ├── loan-info.usecase.ts      #   implements LoanInfoPort
-│   │   ├── profile.usecase.ts        #   implements ProfilePort
-│   │   └── eligibility.usecase.ts    #   implements EligibilityPort
+│   │   ├── authenticate.service.ts   #   implements AuthenticatePort, needs UserRepositoryPort
+│   │   ├── payment.service.ts        #   implements PaymentPort
+│   │   ├── loan-info.service.ts      #   implements LoanInfoPort
+│   │   ├── profile.service.ts        #   implements ProfilePort
+│   │   └── eligibility.service.ts    #   implements EligibilityPort
 │   └── cognitive/                # COGNITIVE region (CLL) — implements the CLL driving ports.
 │       │                         #   Core logic, NOT an adapter: it holds policy, no technology.
 │       │                         #   Reaches the BLL only through BLL driving ports; reaches the
 │       │                         #   model only through LanguageModelPort.
-│       ├── inquiry.policy.ts          # owns the FIXED determinism map + topic labels
-│       ├── personalization.policy.ts  # owns the theme policy
-│       ├── chat-insights.policy.ts    # owns the sentiment bands
-│       └── account-summary.policy.ts  # owns the aggregation policy (profile+loan+payment)
+│       ├── inquiry.service.ts         # owns the FIXED determinism map + topic labels
+│       ├── personalization.service.ts # owns the theme policy
+│       ├── chat-insights.service.ts   # owns the sentiment bands
+│       └── account-summary.service.ts # owns the aggregation policy (profile+loan+payment)
 │
 ├── ports/                        # THE BOUNDARY — pure TypeScript interfaces, ZERO @angular
 │                                 #   Each port DECLARES the DTOs it alone owns

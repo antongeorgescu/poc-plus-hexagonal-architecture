@@ -23,8 +23,8 @@ import {
   LanguageModelPort,
   WelcomeCopy,
 } from '../../ports/driven/language-model.port';
-import { InquiryCategory } from '../../core/domain/inquiry.vocabulary';
-import { SentimentLabel } from '../../core/domain/sentiment.vocabulary';
+import { InquiryCategory } from '../../core/domain/inquiry.type';
+import { SentimentLabel } from '../../core/domain/sentiment.type';
 import { User, UserType } from '../../core/domain/user.entity';
 import { BorrowerProfile } from '../../core/domain/borrower.entity';
 import { LoanInfo } from '../../core/domain/loan.entity';
