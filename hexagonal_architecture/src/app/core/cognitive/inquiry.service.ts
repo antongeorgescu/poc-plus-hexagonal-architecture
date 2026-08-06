@@ -86,8 +86,11 @@ const CATEGORY_DESCRIPTION: Record<InquiryCategory, string> = {
   LIFE_EVENT:
     'A personal life event that may change what the borrower is entitled to — a ' +
     'new child, marriage, or returning to study — usually asked as whether the ' +
-    'event qualifies them for relief. Choose this over REPAYMENT_OPTIONS ' +
-    'whenever a life event is mentioned.',
+    'event qualifies them for relief. Also covers ABSTRACT or HYPOTHETICAL ' +
+    'framing, where no specific event is named: "if a personal event affects my ' +
+    'ability to pay, what help is there?". Choose this over REPAYMENT_OPTIONS ' +
+    'whenever a life event is mentioned, and HARDSHIP instead if the borrower ' +
+    'says they cannot pay right now.',
   REPAYMENT_OPTIONS:
     'Exploring scenarios and qualifying conditions while NOT in distress: how to ' +
     'pay the loan off faster, how much extra that would take, what repayment ' +

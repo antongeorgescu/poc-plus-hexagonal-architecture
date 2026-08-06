@@ -36,10 +36,18 @@ function sameQuestion(a: string, b: string): boolean {
   return norm(a) === norm(b);
 }
 
-/** One answered inquiry in the dashboard history. */
+/**
+ * One answered inquiry in the dashboard history.
+ *
+ * `queries` is a LIST because a topic gets exactly one card. Every answer
+ * component takes only `[user]` — none receives the question text — so two
+ * questions on the same topic would render byte-identical cards. Instead the
+ * card is reused and each new phrasing is recorded on it, so nothing the
+ * borrower asked disappears.
+ */
 interface InquiryEntry {
   id: number;
-  query: string;
+  queries: string[];
   result: InquiryResult;
 }
 
@@ -122,28 +130,33 @@ export class DashboardComponent {
       // CLL proposes the category; the answer components obtain the numbers.
       const result = await this.inquiry.classify(query);
 
-      // De-duplicate, but only where a second card would genuinely be a copy.
+      // ONE CARD PER TOPIC. Every answer component is rendered from `[user]`
+      // alone, so a second card for the same category would be an exact copy —
+      // clutter, not information.
       //
-      // A DETERMINISTIC topic renders the same component with the same figures
-      // however the borrower phrased it, so re-asking scrolls to the card that
-      // is already on screen.
-      //
-      // A NON-deterministic topic must compare the QUESTION, not just the
-      // category. GENERAL in particular is the catch-all for anything the
-      // classifier could not place — collapsing on category alone silently
-      // swallowed every unmatched question after the first, scrolling the
-      // borrower back to someone else's question instead of answering theirs.
-      const existing = this.entries().find(
-        (e) =>
-          e.result.category === result.category &&
-          (result.deterministic || sameQuestion(e.query, query))
-      );
+      // But a repeat must never be silent either: collapsing on category while
+      // showing only the FIRST question made later questions look ignored,
+      // which was especially bad for GENERAL, the catch-all. So the existing
+      // card absorbs the new phrasing and is flashed, and every question the
+      // borrower asked stays visible on it.
+      const existing = this.entries().find((e) => e.result.category === result.category);
       if (existing) {
+        const isRepeat = existing.queries.some((q) => sameQuestion(q, query));
+        if (!isRepeat) {
+          this.entries.update((list) =>
+            list.map((e) =>
+              e.id === existing.id ? { ...e, queries: [...e.queries, query] } : e
+            )
+          );
+        }
         this.scrollToEntry(existing.id);
         return;
       }
 
-      this.entries.update((list) => [{ id: this.nextId++, query, result }, ...list]);
+      this.entries.update((list) => [
+        { id: this.nextId++, queries: [query], result },
+        ...list,
+      ]);
     } finally {
       this.asking.set(false);
     }

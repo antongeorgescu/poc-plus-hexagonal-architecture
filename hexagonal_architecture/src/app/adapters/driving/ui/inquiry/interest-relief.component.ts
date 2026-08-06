@@ -22,7 +22,11 @@ import { ELIGIBILITY_PORT } from '../../../../configuration/tokens';
   template: `
     <section class="card">
       <div class="card__eyebrow">Life event · interest rate relief</div>
-      <h3>Congratulations on your new arrival! 🍼</h3>
+      <h3>A life change may lower your rate</h3>
+      <p class="muted">
+        Events such as a new child, a marriage, or returning to study can qualify
+        you for a reduced interest rate. Here is where your account stands.
+      </p>
 
       @if (result.eligible) {
         <span class="pill pill--good">You qualify</span>

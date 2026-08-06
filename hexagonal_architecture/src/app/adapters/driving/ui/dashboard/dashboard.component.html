@@ -63,8 +63,14 @@
               [class.response--flash]="entry.id === highlightedId()">
               <div class="response__head">
                 <div>
-                  <span class="muted small">You asked</span>
-                  <p class="response__query">"{{ entry.query }}"</p>
+                  <span class="muted small">
+                    {{ entry.queries.length > 1
+                        ? 'You asked, in ' + entry.queries.length + ' ways'
+                        : 'You asked' }}
+                  </span>
+                  @for (q of entry.queries; track q) {
+                    <p class="response__query">"{{ q }}"</p>
+                  }
                 </div>
               </div>
 

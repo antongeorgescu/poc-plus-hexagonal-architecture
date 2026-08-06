@@ -118,6 +118,7 @@ export class MockLanguageModel implements LanguageModelPort {
     {
       category: 'LIFE_EVENT',
       keywords: [
+        // Named events.
         /child/i,
         /baby/i,
         /born/i,
@@ -127,6 +128,12 @@ export class MockLanguageModel implements LanguageModelPort {
         /qualify/i,
         /married/i,
         /relief/i,
+        // Abstract or hypothetical framing — the borrower names no specific
+        // event ("a personal event", "if something happens"). Placed after
+        // HARDSHIP in rule order, so a borrower who says they cannot pay TODAY
+        // still reaches hardship support rather than an eligibility explainer.
+        /(personal|life|major|family) (event|change|circumstance)/i,
+        /(in case|if|should).{0,60}(hinder|affect|impact|prevent).{0,40}(pay|paying|ability)/i,
       ],
     },
   ];
