@@ -182,3 +182,89 @@ button {
 .welcome__mark {
   margin-bottom: 0.5rem;
 }
+
+/* ============================================================
+   REGION FRAMING — BLL (deterministic) vs CLL (cognitive)
+
+   Draws a line around every visible card and tints it by the region
+   that OWNS the answer, so the two halves of the "Plus" architecture
+   are separable at a glance.
+
+   Three redundant channels, on purpose — colour alone is not a signal
+   a colour-blind viewer or a projector can be trusted to carry:
+     1. HUE     steel blue  vs  violet
+     2. STROKE  solid all round  vs  dashed on three sides
+     3. WORDS   a tag on the top edge naming the region
+
+   These colours are deliberately declared OUTSIDE the .theme-* blocks
+   and are never overridden by them. A per-user-type theme must not be
+   able to repaint an architectural boundary — theme-3's indigo would
+   otherwise sit uncomfortably close to the CLL violet.
+   ============================================================ */
+
+:root {
+  --bll-line: #1e5f9e;
+  --bll-wash: #f5f9fd;
+  --cll-line: #7c3aed; /* matches the AI badge */
+  --cll-wash: #faf6ff;
+}
+
+@mixin region-frame($line, $wash, $side-style, $tag) {
+  position: relative;
+  background: $wash;
+  border: 2px $side-style $line;
+  border-left: 6px solid $line; /* a solid spine on both, so the tint reads even when dashed */
+  box-shadow: 0 6px 18px rgba(15, 45, 80, 0.06);
+
+  /* Tag straddling the top border, like a fieldset legend. */
+  &::after {
+    content: $tag;
+    position: absolute;
+    top: -0.65rem;
+    right: 1.1rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: $line;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+
+/* Two ways to opt in:
+     .card--bll / .card--cll   — the card frames itself
+     .region--bll / .region--cll on any ancestor — frames every card inside,
+       which is what the dashboard uses so the class can be bound straight
+       from InquiryResult.deterministic without touching 8 components. */
+.card.card--bll,
+.region--bll .card {
+  @include region-frame(var(--bll-line), var(--bll-wash), solid, 'BLL · deterministic');
+}
+
+.card.card--cll,
+.region--cll .card {
+  @include region-frame(var(--cll-line), var(--cll-wash), dashed, 'CLL · contextual');
+}
+
+/* Sub-panels inside a framed card must not inherit the wash, or the card
+   loses its internal contrast against its own surface. */
+.region--bll .card .callout,
+.region--cll .card .callout,
+.card--cll .callout {
+  background: var(--surface);
+}
+
+@media (max-width: 640px) {
+  /* Narrow screens: keep the tag from colliding with the heading. */
+  .card.card--bll::after,
+  .card.card--cll::after,
+  .region--bll .card::after,
+  .region--cll .card::after {
+    font-size: 0.56rem;
+    right: 0.7rem;
+  }
+}

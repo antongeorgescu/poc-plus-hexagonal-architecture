@@ -2,6 +2,7 @@
 /node_modules
 /.angular
 /out-tsc
+/references
 *.log
 .DS_Store
 Thumbs.db

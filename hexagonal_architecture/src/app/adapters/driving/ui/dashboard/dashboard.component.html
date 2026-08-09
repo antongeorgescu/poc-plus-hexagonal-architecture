@@ -20,8 +20,21 @@
     </header>
 
     <main class="content">
+      <!-- Decoder for the two frames. Always visible: the insights panel below
+           is framed even before the borrower has asked anything. -->
+      <div class="legend" role="note">
+        <span class="legend__title">How to read this page</span>
+        <span class="legend__item legend__item--bll">
+          <strong>BLL</strong> Deterministic — computed by the business rules. Same for every borrower.
+        </span>
+        <span class="legend__item legend__item--cll">
+          <strong>CLL</strong> Contextual — shaped by your situation. Every amount, date and
+          eligibility verdict inside it is still computed by the BLL.
+        </span>
+      </div>
+
       @if (welcome(); as w) {
-        <section class="welcome card">
+        <section class="welcome card card--cll">
           <div class="welcome__mark"><app-ai-badge label="AI-written welcome" /></div>
           <h1>{{ w.greeting }}</h1>
           <p class="welcome__q">{{ w.question }}</p>
@@ -31,8 +44,9 @@
               type="text"
               [(ngModel)]="inquiryText"
               (keyup.enter)="ask()"
-              placeholder="Type your question…"
+              placeholder="Type your question here, then press Enter…"
               aria-label="Your question"
+              autofocus
             />
             <button class="btn" (click)="ask()" [disabled]="asking()">
               {{ asking() ? 'Thinking…' : 'Ask' }}
@@ -88,7 +102,14 @@
                 }
               </div>
 
-              <div class="grid response__grid">
+              <!-- The frame comes off the SAME flag as the AI badge above:
+                   DETERMINISM_POLICY, stamped in the core. Flip a category in
+                   that map and the border, tint and tag all follow — no answer
+                   component knows which region it is drawn in. -->
+              <div
+                class="grid response__grid"
+                [class.region--bll]="entry.result.deterministic"
+                [class.region--cll]="!entry.result.deterministic">
                 @switch (entry.result.category) {
                   @case ('NEXT_PAYMENT') {
                     <app-next-payment [user]="u" />
@@ -121,7 +142,10 @@
         </div>
       }
 
-      <div class="insights-panel">
+      <!-- Always-on cards. Not inquiry categories, so there is no policy flag to
+           read: AccountSummaryPort and ChatInsightsPort are cognitive
+           unconditionally, exactly as the AI badge inside them already asserts. -->
+      <div class="insights-panel region--cll">
         <app-account-summary [user]="u" />
         <app-chat-insights [user]="u" />
       </div>
