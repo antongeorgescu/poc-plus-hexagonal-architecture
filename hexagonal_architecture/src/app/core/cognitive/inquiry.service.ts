@@ -140,10 +140,10 @@ export class InquiryService implements InquiryPort {
   }
 
   /** Grounding pass-through — reads the KB driven port (never a system of record). */
-  getJobsForProgram(user: User): JobPosting[] {
+  getJobsForProgram(user: User): Promise<JobPosting[]> {
     return this.knowledgeBase.getJobsForProgram(
       user.programOfStudy,
-      `${user.city}, ${user.state}`
+      `${user.city}, ${user.province}`
     );
   }
 }

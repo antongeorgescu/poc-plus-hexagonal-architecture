@@ -36,7 +36,7 @@ export class ChatInsightsService implements ChatInsightsPort {
 
   async getInsights(user: User): Promise<ChatInsights> {
     // Grounding: raw facts come from the driven port; this layer only interprets.
-    const record = this.history.getHistory(user);
+    const record = await this.history.getHistory(user);
     return {
       summary: record.summary,
       sentiment: await this.toSentiment(record.toneScore),

@@ -1,0 +1,21 @@
+program,title,company,city,province,salaryAmount,salaryUnit,type
+Computer Science,Junior Software Engineer,Brightloop Systems,Toronto,ON,82000,yr,Full-time
+Computer Science,IT Support Specialist,Nimbus Cloud,Ottawa,ON,28,hr,Contract
+Computer Science,QA Analyst,Ledgerline,Vancouver,BC,68000,yr,Full-time
+Registered Nursing,Registered Nurse — Med/Surg,Seawall Health,Vancouver,BC,41,hr,Full-time
+Registered Nursing,Home Care Nurse,CareBridge,Victoria,BC,38,hr,Part-time
+Registered Nursing,Clinic Triage Nurse,Summit Family Clinic,Calgary,AB,76000,yr,Full-time
+Mechanical Engineering,Mechanical Design Engineer,Peak Manufacturing,Calgary,AB,79000,yr,Full-time
+Mechanical Engineering,Maintenance Technician,Bow River Foods,Edmonton,AB,31,hr,Full-time
+Mechanical Engineering,CAD Drafter,Alpine Fabrication,Saskatoon,SK,26,hr,Contract
+Marketing,Digital Marketing Coordinator,Red River Media,Winnipeg,MB,54000,yr,Full-time
+Marketing,Social Media Associate,Grove & Co.,Winnipeg,MB,22,hr,Part-time
+Marketing,Content Marketing Specialist,Northstar SaaS,Toronto,ON,61000,yr,Full-time
+Graphic Design,Junior Graphic Designer,Plateau Creative,Montreal,QC,52000,yr,Full-time
+Graphic Design,Production Artist,Griffintown Print,Montreal,QC,24,hr,Contract
+Graphic Design,UI/UX Design Intern,Mile End Apps,Quebec City,QC,21,hr,Part-time
+Culinary Arts,Line Cook,Bluenose Bistro,Halifax,NS,23,hr,Full-time
+Culinary Arts,Pastry Assistant,Spring Garden Bakery,Halifax,NS,20,hr,Part-time
+Culinary Arts,Kitchen Supervisor,Waterfront Grill Group,St. John's,NL,49000,yr,Full-time
+General,Customer Service Representative,Maple Ridge Services Group,Mississauga,ON,20,hr,Full-time
+General,Administrative Assistant,Community Partners,Halifax,NS,22,hr,Full-time

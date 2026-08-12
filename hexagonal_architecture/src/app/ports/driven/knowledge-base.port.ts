@@ -7,6 +7,10 @@
 import { JobPosting } from '../../core/domain/job-posting.type';
 
 export interface KnowledgeBasePort {
-  /** Mock job board keyed by the borrower's program of study + location. */
-  getJobsForProgram(program: string, location: string): JobPosting[];
+  /**
+   * Mock job board keyed by the borrower's program of study. `location` only
+   * ranks the matches (nearest first) — each posting carries its own location.
+   * Async because the catalog is a stored data set, not a hard-coded literal.
+   */
+  getJobsForProgram(program: string, location: string): Promise<JobPosting[]>;
 }

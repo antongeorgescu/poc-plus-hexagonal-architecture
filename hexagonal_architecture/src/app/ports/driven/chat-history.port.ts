@@ -17,5 +17,6 @@ export interface ChatHistoryRecord {
 }
 
 export interface ChatHistoryPort {
-  getHistory(user: User): ChatHistoryRecord;
+  /** Async because the recaps are a stored data set, not a hard-coded literal. */
+  getHistory(user: User): Promise<ChatHistoryRecord>;
 }

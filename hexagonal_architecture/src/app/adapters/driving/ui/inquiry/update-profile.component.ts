@@ -40,7 +40,7 @@ import { PROFILE_PORT } from '../../../../configuration/tokens';
               type="text"
               name="mailingAddress"
               [(ngModel)]="mailingAddress"
-              placeholder="Street, City, State ZIP"
+              placeholder="Street, City, Province, PR  A1A 1A1"
             />
           </label>
 

@@ -27,8 +27,8 @@ import { INQUIRY_PORT } from '../../../../configuration/tokens';
 
       <div class="callout">
         <strong>Good news:</strong> based on your program of study
-        (<em>{{ user.programOfStudy }}</em>) we found current openings near
-        {{ user.city }}, {{ user.state }}.
+        (<em>{{ user.programOfStudy }}</em>) we found current openings in your
+        field — the ones closest to {{ user.city }}, {{ user.province }} first.
       </div>
 
       <div class="jobs">
@@ -114,8 +114,9 @@ export class JobOpportunitiesComponent implements OnInit {
   intro = '';
 
   ngOnInit(): void {
-    // Grounding lookup — synchronous: this reads the knowledge base, not a model.
-    this.jobs = this.inquiry.getJobsForProgram(this.user);
+    // Grounding lookup — async because the catalog is a CSV asset, NOT because a
+    // model is involved. No cognition and no decision happens on this line.
+    void this.inquiry.getJobsForProgram(this.user).then((jobs) => (this.jobs = jobs));
 
     switch (this.user.userType) {
       case 1:

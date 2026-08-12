@@ -11,7 +11,7 @@ export interface BorrowerProfile {
   fullName: string;
   programOfStudy: string;
   city: string;
-  state: string;
+  province: string;
   location: string;
   creditScore: number;
   userType: UserType;
@@ -43,8 +43,8 @@ export function buildBorrowerProfile(user: User): BorrowerProfile {
     fullName: `${user.firstName} ${user.lastName}`,
     programOfStudy: user.programOfStudy,
     city: user.city,
-    state: user.state,
-    location: `${user.city}, ${user.state}`,
+    province: user.province,
+    location: `${user.city}, ${user.province}`,
     creditScore: user.creditScore,
     userType: user.userType,
     standingLabel: label,

@@ -16,8 +16,8 @@ import { Provider } from '@angular/core';
 
 // Driven (secondary) adapters
 import { CsvUserRepository } from '../adapters/driven/csv-user.repository';
-import { InMemoryKnowledgeBase } from '../adapters/driven/in-memory-knowledge-base';
-import { InMemoryChatHistory } from '../adapters/driven/in-memory-chat-history';
+import { CsvKnowledgeBase } from '../adapters/driven/csv-knowledge-base';
+import { CsvChatHistory } from '../adapters/driven/csv-chat-history';
 import { MockLanguageModel } from '../adapters/driven/mock-language-model';
 import { AzureAiLanguageModel } from '../adapters/driven/azure-ai-language-model';
 import { resolveAiConfig, toAzureOptions, usesAzure } from './ai.config';
@@ -63,8 +63,8 @@ import {
 export const hexagonalProviders: Provider[] = [
   // --- (a) DRIVEN adapters bound to their driven-port tokens (core drives OUT) ---
   { provide: USER_REPOSITORY_PORT, useFactory: () => new CsvUserRepository() },
-  { provide: KNOWLEDGE_BASE_PORT, useFactory: () => new InMemoryKnowledgeBase() },
-  { provide: CHAT_HISTORY_PORT, useFactory: () => new InMemoryChatHistory() },
+  { provide: KNOWLEDGE_BASE_PORT, useFactory: () => new CsvKnowledgeBase() },
+  { provide: CHAT_HISTORY_PORT, useFactory: () => new CsvChatHistory() },
   // The LLM runtime is a technology behind a port. THIS factory is the only
   // place in the app that knows whether the words come from an in-process stub
   // or from Azure OpenAI — no core file, no UI file, and no other adapter can

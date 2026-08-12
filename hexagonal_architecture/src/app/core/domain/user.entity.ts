@@ -19,7 +19,7 @@ export interface User {
   userType: UserType;
   programOfStudy: string;
   city: string;
-  state: string;
+  province: string;
   originalAmount: number;
   currentBalance: number;
   interestRate: number; // annual %, e.g. 4.25

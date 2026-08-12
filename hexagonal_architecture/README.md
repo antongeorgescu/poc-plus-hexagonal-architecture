@@ -114,8 +114,8 @@ src/app/
 │       ├── csv-user.repository.ts     # implements UserRepositoryPort (fetch assets/users.csv)
 │       ├── mock-language-model.ts     # implements LanguageModelPort — keyword rules + templates
 │       ├── azure-ai-language-model.ts # implements LanguageModelPort — REAL Azure OpenAI calls
-│       ├── in-memory-knowledge-base.ts# implements KnowledgeBasePort
-│       └── in-memory-chat-history.ts  # implements ChatHistoryPort
+│       ├── csv-knowledge-base.ts      # implements KnowledgeBasePort (fetch assets/jobs.csv)
+│       └── csv-chat-history.ts        # implements ChatHistoryPort (fetch assets/chat-summary.csv)
 │
 └── configuration/                # COMPOSITION ROOT (framework wiring; may import @angular)
     ├── tokens.ts                 #   InjectionTokens typed to the PORT interfaces
@@ -124,6 +124,25 @@ src/app/
     ├── session.store.ts          #   signal-based SessionStore
     └── auth.guard.ts             #   authGuard on /dashboard
 ```
+
+### Outside `src/app/`
+
+```
+src/assets/                       # DATA — three of the four driven adapters read a CSV
+├── users.csv                     #   CsvUserRepository — 6 borrowers, the system of record
+├── jobs.csv                      #   CsvKnowledgeBase  — 20 postings keyed by program
+├── chat-summary.csv              #   CsvChatHistory    — one row per borrower
+└── ai-config.example.js          #   optional Azure defaults (copy to ai-config.js; git-ignored)
+
+references/                       # DEEP-DIVE DOCS (markdown + a PDF rendering of each)
+├── project_swagger.md            #   every component, port and operation — the "parts"
+└── inquiry_scenario_end_to_end.md#   one request traced through every layer — the "journey"
+```
+
+**Why the data sits in CSVs.** Nothing in `core/` or `ports/` names any of those
+files — only the adapter that fetches one does. Changing the job catalog or a
+borrower's recap is a data edit, not a code change, which is the same property the
+port ring buys at the type level.
 
 ## The ports-and-adapters boundary (how it is enforced)
 
@@ -228,7 +247,8 @@ The N-Tier sibling expresses the same guarantee a third way, as a runtime
   outcome decided by `EligibilityPort`). Both are personalized: the copy adapts to
   the borrower's standing tier, while every authoritative value still comes from
   the core.
-- Knowledge base and chat history are **synthetic in-memory adapters**. The model
+- The knowledge base and chat history are **synthetic CSV adapters**
+  (`assets/jobs.csv`, `assets/chat-summary.csv`). The model
   behind `LanguageModelPort` defaults to `MockLanguageModel` — keyword matching and
   string templates, no real LLM call — but a **real Azure OpenAI adapter ships
   alongside it** (see below) and is selected by configuration alone.
@@ -287,7 +307,7 @@ The CLL/BLL split survives the upgrade, and the adapter is where that is enforce
   POC therefore behaves identically with no credentials, no network, or a cold
   Azure resource — you get templated copy instead of generated copy.
 
-### The one thing that had to change inside the hexagon
+### What had to change inside the hexagon — twice
 
 `LanguageModelPort` was **synchronous**, which quietly assumed the adapter behind
 it was in-process. No remote model can satisfy that shape, so the port — and the
@@ -299,13 +319,35 @@ port had leaked an assumption about its adapter. Now that the contract is shaped
 by the *slowest plausible* adapter, the claim is true — mock and Azure are
 genuinely interchangeable, and a third runtime would cost one line.
 
+**The same lesson repeated for grounding.** `KnowledgeBasePort` and
+`ChatHistoryPort` were synchronous while their adapters held hard-coded literals.
+Moving the job catalog and the chat recaps into `assets/jobs.csv` and
+`assets/chat-summary.csv` — a change of *storage*, with no new logic — forced both
+ports to `Promise` as well. `UserRepositoryPort` never had this problem: it was
+async from the start because it always read a CSV.
+
+The generalisable point is that a port's synchronicity is part of its contract,
+and picking it from the adapter you happen to have first is how the abstraction
+leaks. Shape it for the most distant adapter you can plausibly imagine, and
+swapping really is a composition-root change.
+
 ## Run it
 
 ```bash
-cd POC/hexagonal_architecture
+cd hexagonal_architecture
 npm install
-npm run build        # production build → dist/hexagonal-architecture-loan-poc
+npm run build        # production build → dist/loan-servicing-poc
 npm start            # dev server at http://localhost:4200
 ```
 
 All six demo accounts use the password **demo123**.
+
+## Further reading
+
+| Document | What it covers |
+| --- | --- |
+| [`PORTS.md`](PORTS.md) | The interface reference — every port, operation and schema. The Swagger page for the core. |
+| [`references/project_swagger.md`](references/project_swagger.md) | The full component inventory: all 54 files by ring, the wiring table, sequence flows. |
+| [`references/inquiry_scenario_end_to_end.md`](references/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
+
+Both `references/` documents ship with a PDF rendering alongside the markdown.

@@ -60,7 +60,7 @@ export class CsvUserRepository implements UserRepositoryPort {
         userType: Number(record['userType']) as UserType,
         programOfStudy: record['programOfStudy'],
         city: record['city'],
-        state: record['state'],
+        province: record['province'],
         originalAmount: Number(record['originalAmount']),
         currentBalance: Number(record['currentBalance']),
         interestRate: Number(record['interestRate']),

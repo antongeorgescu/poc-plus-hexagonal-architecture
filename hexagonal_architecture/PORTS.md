@@ -42,10 +42,16 @@ All bindings live in one file, [`configuration/providers.ts`](src/app/configurat
 
 ## Conventions that hold across every port
 
-**Async means "may leave the process."** Anything that touches the language model
-or the network returns a `Promise`; pure in-core computation is synchronous. The
-async signature is declared on the *port*, not discovered per adapter, so a
-remote implementation never forces a change inside the hexagon.
+**Async means "may leave the process."** Anything that touches the language model,
+the network, or a stored asset returns a `Promise`; pure in-core computation is
+synchronous. The async signature is declared on the *port*, not discovered per
+adapter, so a remote implementation never forces a change inside the hexagon.
+
+That is why all three data-backed driven ports — `UserRepositoryPort`,
+`KnowledgeBasePort`, `ChatHistoryPort` — are async even though their adapters
+merely `fetch()` a CSV from `assets/`. The asynchrony is about *where the data
+lives*, not about whether a model is involved; only `LanguageModelPort` is async
+for the model reason.
 
 **No port throws for an expected outcome.** Failures are values:
 
@@ -58,8 +64,9 @@ remote implementation never forces a change inside the hexagon.
 **Authority.** Ports marked **BLL** produce authoritative values — money,
 eligibility, identity. Ports marked **CLL** interpret, narrate and personalise;
 they never compute an authoritative value, and they obtain one only by calling a
-BLL driving port themselves. See
-[`../documentation/what_drives_it_all.md`](../documentation/what_drives_it_all.md).
+BLL driving port themselves. For the mechanism in detail see
+[`references/project_swagger.md`](references/project_swagger.md); to watch it happen
+on one request, [`references/inquiry_scenario_end_to_end.md`](references/inquiry_scenario_end_to_end.md).
 
 ---
 
@@ -122,7 +129,7 @@ the result.
 | Operation | Returns | Notes |
 |---|---|---|
 | `classify(text: string)` | `Promise<`[`InquiryResult`](#inquiryresult)`>` | Async: the model may be remote. An unusable proposal collapses to `GENERAL`. |
-| `getJobsForProgram(user: User)` | [`JobPosting[]`](#jobposting) | Read-only grounding. Sync — reads the knowledge base, not a model. |
+| `getJobsForProgram(user: User)` | `Promise<`[`JobPosting[]`](#jobposting)`>` | Read-only grounding. Async because the catalog is a stored CSV — **not** because a model is involved. |
 
 > `InquiryResult.deterministic` comes from a **fixed policy map in the core**, not
 > from the model. A wrong proposal can pick the wrong topic; it cannot move a
@@ -163,8 +170,8 @@ Implement these to run the core against different technology. Bind in
 |---|---|---|
 | [UserRepositoryPort](#userrepositoryport) | `USER_REPOSITORY_PORT` | `CsvUserRepository` — fetches `assets/users.csv` |
 | [LanguageModelPort](#languagemodelport) | `LANGUAGE_MODEL_PORT` | `MockLanguageModel` *(default)* or `AzureAiLanguageModel` |
-| [KnowledgeBasePort](#knowledgebaseport) | `KNOWLEDGE_BASE_PORT` | `InMemoryKnowledgeBase` |
-| [ChatHistoryPort](#chathistoryport) | `CHAT_HISTORY_PORT` | `InMemoryChatHistory` |
+| [KnowledgeBasePort](#knowledgebaseport) | `KNOWLEDGE_BASE_PORT` | `CsvKnowledgeBase` — fetches `assets/jobs.csv` |
+| [ChatHistoryPort](#chathistoryport) | `CHAT_HISTORY_PORT` | `CsvChatHistory` — fetches `assets/chat-summary.csv` |
 
 ## UserRepositoryPort
 
@@ -197,13 +204,13 @@ the taxonomy.
 
 | Operation | Returns | Notes |
 |---|---|---|
-| `getJobsForProgram(program: string, location: string)` | [`JobPosting[]`](#jobposting) | Grounding source. Never a system of record. |
+| `getJobsForProgram(program: string, location: string)` | `Promise<`[`JobPosting[]`](#jobposting)`>` | Grounding source (`assets/jobs.csv`). `location` only ranks the matches nearest-first. Never a system of record. |
 
 ## ChatHistoryPort
 
 | Operation | Returns | Notes |
 |---|---|---|
-| `getHistory(user: User)` | [`ChatHistoryRecord`](#chathistoryrecord) | Returns a **raw** `toneScore`; the CLL interprets it. |
+| `getHistory(user: User)` | `Promise<`[`ChatHistoryRecord`](#chathistoryrecord)`>` | Grounding source (`assets/chat-summary.csv`, one row per borrower). Returns a **raw** `toneScore`; the CLL interprets it. |
 
 ---
 
@@ -217,7 +224,7 @@ The input to nearly every operation. One row of `assets/users.csv`.
 {
   username: string;  password: string;  firstName: string;  lastName: string;
   userType: UserType;                 // 1 | 2 | 3
-  programOfStudy: string;  city: string;  state: string;
+  programOfStudy: string;  city: string;  province: string;
   originalAmount: number;  currentBalance: number;  interestRate: number;
   monthlyPayment: number;  nextPaymentDate: string;  nextPaymentAmount: number;
   maturityDate: string;               // ISO yyyy-mm-dd
@@ -271,7 +278,7 @@ The input to nearly every operation. One row of `assets/users.csv`.
 ```ts
 {
   firstName: string;  lastName: string;  fullName: string;
-  programOfStudy: string;  city: string;  state: string;  location: string;
+  programOfStudy: string;  city: string;  province: string;  location: string;
   creditScore: number;  userType: UserType;
   standingLabel: string;                        // rule-derived
   standingTone: 'good' | 'warn' | 'bad';
