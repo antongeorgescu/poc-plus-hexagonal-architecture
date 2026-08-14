@@ -12,6 +12,8 @@
     <p class="arch-note">⬡ Built on <strong>Hexagonal Architecture (Ports &amp; Adapters)</strong> — a technology-agnostic core with driving &amp; driven ports; the CLL is just another driving adapter <em>(the CLL proposes; the BLL disposes)</em>.</p>
     <p class="login__docs">📄 Detailed technical information is in <a href="https://github.com/antongeorgescu/plus-architectures-with-cll-and-bll/blob/master/documentation/plus_architecture.md" target="_blank" rel="noopener">The "Plus" Architecture — Aggregating BLL and CLL</a>.</p>
 
+    <p class="login__docs login__docs--config">⚙️ Which topics are answered identically for every borrower is a business setting, not code — see the <a routerLink="/configuration">determinism policy configuration</a>.</p>
+
     <form (ngSubmit)="submit()" autocomplete="off">
       <label for="login-username">
         <span>Username</span>

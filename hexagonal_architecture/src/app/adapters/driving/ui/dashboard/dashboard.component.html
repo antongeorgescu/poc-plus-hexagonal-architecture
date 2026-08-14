@@ -103,9 +103,10 @@
               </div>
 
               <!-- The frame comes off the SAME flag as the AI badge above:
-                   DETERMINISM_POLICY, stamped in the core. Flip a category in
-                   that map and the border, tint and tag all follow — no answer
-                   component knows which region it is drawn in. -->
+                   DETERMINISM_POLICY, stamped by the core from the map bound in
+                   configuration/. Flip a category there and the border, tint and
+                   tag all follow — no answer component knows which region it is
+                   drawn in. -->
               <div
                 class="grid response__grid"
                 [class.region--bll]="entry.result.deterministic"

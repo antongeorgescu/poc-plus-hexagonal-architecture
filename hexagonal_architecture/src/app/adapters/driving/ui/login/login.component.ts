@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AUTHENTICATE_PORT } from '../../../../configuration/tokens';
 import { AuthenticatePort } from '../../../../ports/driving/authenticate.port';
@@ -15,7 +15,7 @@ import { SessionStore } from '../../../../configuration/session.store';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

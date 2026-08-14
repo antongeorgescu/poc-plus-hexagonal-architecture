@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
  *
  * WHERE IT APPEARS, AND WHY:
  *   · Inquiry answers — the dashboard renders it from `InquiryResult.deterministic`,
- *     which is stamped from `DETERMINISM_POLICY` in the core. It is therefore
+ *     which the core stamps from the injected `DETERMINISM_POLICY`. It is therefore
  *     DATA-DRIVEN: flip a category in that map and the badge follows automatically,
  *     with no change here.
  *   · Always-on cards (welcome, account summary, conversation insights) — these are

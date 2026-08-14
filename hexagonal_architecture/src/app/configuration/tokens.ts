@@ -28,6 +28,7 @@ import { UserRepositoryPort } from '../ports/driven/user-repository.port';
 import { KnowledgeBasePort } from '../ports/driven/knowledge-base.port';
 import { ChatHistoryPort } from '../ports/driven/chat-history.port';
 import { LanguageModelPort } from '../ports/driven/language-model.port';
+import { InquiryPolicy } from '../core/cognitive/inquiry.policy';
 
 // --- Driving-port tokens · deterministic region (BLL) ---
 export const AUTHENTICATE_PORT = new InjectionToken<AuthenticatePort>('AuthenticatePort');
@@ -41,6 +42,12 @@ export const INQUIRY_PORT = new InjectionToken<InquiryPort>('InquiryPort');
 export const PERSONALIZATION_PORT = new InjectionToken<PersonalizationPort>('PersonalizationPort');
 export const CHAT_INSIGHTS_PORT = new InjectionToken<ChatInsightsPort>('ChatInsightsPort');
 export const ACCOUNT_SUMMARY_PORT = new InjectionToken<AccountSummaryPort>('AccountSummaryPort');
+
+// --- Configuration tokens (business settings, not ports) ---
+// The inquiry policy is a VALUE the composition root binds, not a door the core
+// knocks on. It gets a token so the UI can display it the same way it consumes
+// everything else — by token, never by importing a concrete file.
+export const INQUIRY_POLICY_CONFIG = new InjectionToken<InquiryPolicy>('InquiryPolicy');
 
 // --- Driven-port tokens (the core reaches OUT through these) ---
 export const USER_REPOSITORY_PORT = new InjectionToken<UserRepositoryPort>('UserRepositoryPort');

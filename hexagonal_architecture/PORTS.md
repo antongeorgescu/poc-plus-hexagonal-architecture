@@ -131,9 +131,16 @@ the result.
 | `classify(text: string)` | `Promise<`[`InquiryResult`](#inquiryresult)`>` | Async: the model may be remote. An unusable proposal collapses to `GENERAL`. |
 | `getJobsForProgram(user: User)` | `Promise<`[`JobPosting[]`](#jobposting)`>` | Read-only grounding. Async because the catalog is a stored CSV — **not** because a model is involved. |
 
-> `InquiryResult.deterministic` comes from a **fixed policy map in the core**, not
-> from the model. A wrong proposal can pick the wrong topic; it cannot move a
-> topic across the deterministic line.
+> `InquiryResult.deterministic` comes from a **fixed policy map applied in the
+> core**, not from the model. A wrong proposal can pick the wrong topic; it cannot
+> move a topic across the deterministic line.
+>
+> The map's *values* are a business setting bound at the composition root
+> ([`configuration/inquiry.policy.config.ts`](src/app/configuration/inquiry.policy.config.ts))
+> against the `InquiryPolicy` contract the core declares
+> ([`core/cognitive/inquiry.policy.ts`](src/app/core/cognitive/inquiry.policy.ts)) —
+> the same "core names an interface, never a source" rule the ports follow. A
+> servicer can retune the taxonomy per deployment; no model can, ever.
 
 ## AccountSummaryPort
 

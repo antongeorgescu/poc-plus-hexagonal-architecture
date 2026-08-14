@@ -83,7 +83,8 @@ src/app/
 │       │                         #   Core logic, NOT an adapter: it holds policy, no technology.
 │       │                         #   Reaches the BLL only through BLL driving ports; reaches the
 │       │                         #   model only through LanguageModelPort.
-│       ├── inquiry.service.ts         # owns the FIXED determinism map + topic labels
+│       ├── inquiry.policy.ts          # CONTRACT for the determinism map + labels + descriptions
+│       ├── inquiry.service.ts         # APPLIES that policy; values injected by the composition root
 │       ├── personalization.service.ts # owns the theme policy
 │       ├── chat-insights.service.ts   # owns the sentiment bands
 │       └── account-summary.service.ts # owns the aggregation policy (profile+loan+payment)
@@ -109,7 +110,8 @@ src/app/
 │
 ├── adapters/                     # TECHNOLOGY ONLY — no application logic lives here
 │   ├── driving/                  # PRIMARY adapters — they DRIVE the core through driving ports
-│   │   └── ui/                   #   Angular UI (login, dashboard, answer + summary cards)
+│   │   └── ui/                   #   Angular UI (login, dashboard, answer + summary cards,
+│   │                             #   policy/ — read-only view of the determinism setting at /configuration)
 │   └── driven/                   # SECONDARY adapters — the core DRIVES them through driven ports
 │       ├── csv-user.repository.ts     # implements UserRepositoryPort (fetch assets/users.csv)
 │       ├── mock-language-model.ts     # implements LanguageModelPort — keyword rules + templates
@@ -120,6 +122,7 @@ src/app/
 └── configuration/                # COMPOSITION ROOT (framework wiring; may import @angular)
     ├── tokens.ts                 #   InjectionTokens typed to the PORT interfaces
     ├── ai.config.ts              #   which model runtime + how to reach it (no secrets)
+    ├── inquiry.policy.config.ts  #   determinism map + topic labels + topic descriptions (business settings)
     ├── providers.ts              #   binds adapters↔driven ports, both core regions↔driving ports
     ├── session.store.ts          #   signal-based SessionStore
     └── auth.guard.ts             #   authGuard on /dashboard

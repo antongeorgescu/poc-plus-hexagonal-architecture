@@ -21,6 +21,7 @@ import { CsvChatHistory } from '../adapters/driven/csv-chat-history';
 import { MockLanguageModel } from '../adapters/driven/mock-language-model';
 import { AzureAiLanguageModel } from '../adapters/driven/azure-ai-language-model';
 import { resolveAiConfig, toAzureOptions, usesAzure } from './ai.config';
+import { INQUIRY_POLICY } from './inquiry.policy.config';
 
 // Core · deterministic region (implement the BLL driving ports)
 import { AuthenticateService } from '../core/application/authenticate.service';
@@ -58,9 +59,15 @@ import {
   KNOWLEDGE_BASE_PORT,
   CHAT_HISTORY_PORT,
   LANGUAGE_MODEL_PORT,
+  INQUIRY_POLICY_CONFIG,
 } from './tokens';
 
 export const hexagonalProviders: Provider[] = [
+  // --- (0) BUSINESS SETTINGS bound as values (not ports) ---
+  // One binding, two consumers: InquiryService applies it, and the read-only
+  // /configuration screen displays it. Retune here and both follow.
+  { provide: INQUIRY_POLICY_CONFIG, useValue: INQUIRY_POLICY },
+
   // --- (a) DRIVEN adapters bound to their driven-port tokens (core drives OUT) ---
   { provide: USER_REPOSITORY_PORT, useFactory: () => new CsvUserRepository() },
   { provide: KNOWLEDGE_BASE_PORT, useFactory: () => new CsvKnowledgeBase() },
@@ -100,8 +107,11 @@ export const hexagonalProviders: Provider[] = [
   //         the model runtime only through LanguageModelPort. ---
   {
     provide: INQUIRY_PORT,
+    // The determinism map, topic labels and topic descriptions are BUSINESS
+    // settings, bound here like every other binding. The core applies them; it
+    // does not own their values.
     useFactory: (model: LanguageModelPort, kb: KnowledgeBasePort) =>
-      new InquiryService(model, kb),
+      new InquiryService(model, kb, INQUIRY_POLICY),
     deps: [LANGUAGE_MODEL_PORT, KNOWLEDGE_BASE_PORT],
   },
   {
