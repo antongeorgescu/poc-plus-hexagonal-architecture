@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "npm: start (Azure OpenAI proxy)",
+      "type": "pwa-node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/hexagonal_architecture",
+      "env": {
+        "AZURE_OPENAI_ENDPOINT": "https://alvaz-openai.openai.azure.com/",
+        "AZURE_OPENAI_API_KEY": "1f90ee7386024a59a413ad7101326cd1"
+      }
+    }
+  ]
+}
