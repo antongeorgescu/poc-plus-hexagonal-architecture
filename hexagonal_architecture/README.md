@@ -354,3 +354,11 @@ All six demo accounts use the password **demo123**.
 | [`references/inquiry_scenario_end_to_end.md`](references/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
 
 Both `references/` documents ship with a PDF rendering alongside the markdown.
+
+---
+
+## Copyright
+
+Copyright © 2026 Anton Georgescu. All rights reserved.
+
+"The Plus Pattern" © 2026 Anton Georgescu.
