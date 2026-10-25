@@ -1,0 +1,270 @@
+/* ============================================================
+   Global styles + per-user-type theming
+   Themes are applied by adding .theme-1 / .theme-2 / .theme-3
+   on a container element. Each theme redefines CSS variables.
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2933;
+  background: #eef2f7;
+}
+
+:root {
+  --brand: #0b5cab;
+  --brand-dark: #083f77;
+  --accent: #14b8a6;
+  --surface: #ffffff;
+  --surface-muted: #f4f7fb;
+  --text: #1f2933;
+  --text-muted: #61707d;
+  --border: #dbe3ec;
+  --good: #16a34a;
+  --warn: #d97706;
+  --bad: #dc2626;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(15, 45, 80, 0.08);
+}
+
+/* Theme 1 — Excellent payer: calm, premium blue/green */
+.theme-1 {
+  --brand: #0f766e;
+  --brand-dark: #115e59;
+  --accent: #10b981;
+  --surface-muted: #f0fdfa;
+  --border: #cfeee7;
+}
+
+/* Theme 2 — Occasional missed payment (delinquency grade 1): warm amber */
+.theme-2 {
+  --brand: #b45309;
+  --brand-dark: #92400e;
+  --accent: #f59e0b;
+  --surface-muted: #fffbeb;
+  --border: #fde9c8;
+}
+
+/* Theme 3 — Stopped paying (delinquency grade 2): supportive, steady indigo */
+.theme-3 {
+  --brand: #4338ca;
+  --brand-dark: #3730a3;
+  --accent: #6366f1;
+  --surface-muted: #eef2ff;
+  --border: #d9dcfb;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 0.4rem;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.55;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* --- Reusable UI primitives --- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.4rem 1.5rem;
+}
+
+.card__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 0.35rem;
+}
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--brand);
+  color: #fff;
+  transition: transform 0.05s ease, background 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--brand-dark);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--brand);
+  border: 1.5px solid var(--border);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-muted);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pill--good {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--good);
+}
+.pill--warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--warn);
+}
+.pill--bad {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--bad);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.stat__label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.stat__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* AI marker placement inside the welcome card */
+.welcome__mark {
+  margin-bottom: 0.5rem;
+}
+
+/* ============================================================
+   REGION FRAMING — BLL (deterministic) vs CLL (cognitive)
+
+   Draws a line around every visible card and tints it by the region
+   that OWNS the answer, so the two halves of the "Plus" architecture
+   are separable at a glance.
+
+   Three redundant channels, on purpose — colour alone is not a signal
+   a colour-blind viewer or a projector can be trusted to carry:
+     1. HUE     steel blue  vs  violet
+     2. STROKE  solid all round  vs  dashed on three sides
+     3. WORDS   a tag on the top edge naming the region
+
+   These colours are deliberately declared OUTSIDE the .theme-* blocks
+   and are never overridden by them. A per-user-type theme must not be
+   able to repaint an architectural boundary — theme-3's indigo would
+   otherwise sit uncomfortably close to the CLL violet.
+   ============================================================ */
+
+:root {
+  --bll-line: #1e5f9e;
+  --bll-wash: #f5f9fd;
+  --cll-line: #7c3aed; /* matches the AI badge */
+  --cll-wash: #faf6ff;
+}
+
+@mixin region-frame($line, $wash, $side-style, $tag) {
+  position: relative;
+  background: $wash;
+  border: 2px $side-style $line;
+  border-left: 6px solid $line; /* a solid spine on both, so the tint reads even when dashed */
+  box-shadow: 0 6px 18px rgba(15, 45, 80, 0.06);
+
+  /* Tag straddling the top border, like a fieldset legend. */
+  &::after {
+    content: $tag;
+    position: absolute;
+    top: -0.65rem;
+    right: 1.1rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: $line;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+
+/* Two ways to opt in:
+     .card--bll / .card--cll   — the card frames itself
+     .region--bll / .region--cll on any ancestor — frames every card inside,
+       which is what the dashboard uses so the class can be bound straight
+       from InquiryResult.deterministic without touching 8 components. */
+.card.card--bll,
+.region--bll .card {
+  @include region-frame(var(--bll-line), var(--bll-wash), solid, 'BLL · deterministic');
+}
+
+.card.card--cll,
+.region--cll .card {
+  @include region-frame(var(--cll-line), var(--cll-wash), dashed, 'CLL · contextual');
+}
+
+/* Sub-panels inside a framed card must not inherit the wash, or the card
+   loses its internal contrast against its own surface. */
+.region--bll .card .callout,
+.region--cll .card .callout,
+.card--cll .callout {
+  background: var(--surface);
+}
+
+@media (max-width: 640px) {
+  /* Narrow screens: keep the tag from colliding with the heading. */
+  .card.card--bll::after,
+  .card.card--cll::after,
+  .region--bll .card::after,
+  .region--cll .card::after {
+    font-size: 0.56rem;
+    right: 0.7rem;
+  }
+}

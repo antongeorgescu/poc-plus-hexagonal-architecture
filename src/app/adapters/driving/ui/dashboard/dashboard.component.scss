@@ -1,0 +1,288 @@
+.shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--surface-muted), #eef2f7 240px);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.6rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+.brand__mark {
+  font-size: 1.3rem;
+}
+.brand__name em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+.who__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.8rem 1.2rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+/* Decoder for the BLL/CLL frames. The swatches reuse the very same custom
+   properties as the frames do, so the legend can never drift out of sync
+   with what it claims to explain. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.1rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.legend__title {
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.68rem;
+}
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 260px;
+}
+.legend__item::before {
+  content: '';
+  flex: none;
+  width: 1.5rem;
+  height: 1.05rem;
+  border-radius: 4px;
+}
+.legend__item--bll::before {
+  border: 2px solid var(--bll-line);
+  border-left-width: 5px;
+  background: var(--bll-wash);
+}
+.legend__item--cll::before {
+  border: 2px dashed var(--cll-line);
+  border-left: 5px solid var(--cll-line);
+  background: var(--cll-wash);
+}
+.legend__item strong {
+  color: var(--text);
+}
+
+/* The region tag overhangs each card's top border, so the row needs headroom
+   or the tag is clipped by whatever sits above it. */
+.response__grid,
+.insights-panel {
+  padding-top: 0.65rem;
+}
+
+.welcome h1 {
+  font-size: 1.6rem;
+  color: var(--brand-dark);
+}
+.welcome__q {
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* The question box is the ONE place on this page a borrower is meant to act,
+   and it sits on the welcome card's tinted CLL wash — so it is highlighted
+   deliberately rather than left to blend into its own container. */
+.ask {
+  display: flex;
+  gap: 0.6rem;
+  margin: 1.2rem 0 0.9rem;
+  position: relative;
+}
+
+/* Prompt glyph inside the field's left padding. */
+.ask::before {
+  content: '✎';
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--brand);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ask input {
+  flex: 1;
+  padding: 0.85rem 1rem 0.85rem 2.5rem; /* left room for the glyph */
+  border: 2px solid var(--brand);
+  border-radius: 12px;
+  background: var(--surface); /* white, so it lifts off the card wash */
+  font-size: 1rem;
+  font-family: inherit;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+
+  /* Halo in the active theme's brand colour. The rgba line is the fallback for
+     engines without color-mix; the line after it wins where it is supported. */
+  box-shadow: 0 0 0 4px rgba(11, 92, 171, 0.12);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent);
+
+  /* A few slow breaths to draw the eye, then it settles. Deliberately finite:
+     an endlessly pulsing control is a distraction during a live demo. */
+  animation: ask-attention 1.9s ease-in-out 3;
+}
+
+.ask input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.ask input:focus {
+  outline: none;
+  animation: none; /* the borrower has found it — stop asking for attention */
+  box-shadow: 0 0 0 5px rgba(11, 92, 171, 0.22);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+@keyframes ask-attention {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 5%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask input {
+    animation: none;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.chip:hover {
+  border-color: var(--brand);
+  background: var(--surface);
+}
+
+.insights-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .insights-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+.history__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.response {
+  border-radius: 12px;
+  scroll-margin-top: 1rem;
+}
+.response--flash {
+  animation: flash-ring 1.8s ease forwards;
+}
+@keyframes flash-ring {
+  0%,
+  35% {
+    box-shadow: 0 0 0 3px var(--brand);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.response__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+.response__query {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0.1rem 0 0;
+}
+.response__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.response__grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+}
+.small {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .who {
+    display: none;
+  }
+  .welcome h1 {
+    font-size: 1.35rem;
+  }
+}

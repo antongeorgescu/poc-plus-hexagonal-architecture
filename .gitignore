@@ -1,0 +1,16 @@
+/dist
+/node_modules
+/.angular
+/out-tsc
+*.log
+.DS_Store
+Thumbs.db
+
+# local Azure AI runtime override (may contain a key) — never commit
+src/assets/ai-config.js
+
+# Local SQLite database files
+db/data/*.db
+db/data/*.db-journal
+db/data/*.db-wal
+db/data/*.db-shm

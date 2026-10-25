@@ -1,0 +1,165 @@
+@if (user(); as u) {
+  <div class="shell" [class]="welcome()?.themeClass">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark">◆</span>
+        <span class="brand__name">Student Loans <em>Self-Service</em></span>
+      </div>
+      <div class="topbar__right">
+        <div class="who">
+          <span class="who__name">{{ u.firstName }} {{ u.lastName }}</span>
+          <span class="pill"
+            [class.pill--good]="u.userType === 1"
+            [class.pill--warn]="u.userType === 2"
+            [class.pill--bad]="u.userType === 3">
+            {{ typeLabels[u.userType] }}
+          </span>
+        </div>
+        <button class="btn btn--ghost" (click)="logout()">Sign out</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- Decoder for the two frames. Always visible: the insights panel below
+           is framed even before the borrower has asked anything. -->
+      <div class="legend" role="note">
+        <span class="legend__title">How to read this page</span>
+        <span class="legend__item legend__item--bll">
+          <strong>BLL</strong> Deterministic — computed by the business rules. Same for every borrower.
+        </span>
+        <span class="legend__item legend__item--cll">
+          <strong>CLL</strong> Contextual — shaped by your situation. Every amount, date and
+          eligibility verdict inside it is still computed by the BLL.
+        </span>
+      </div>
+
+      @if (welcome(); as w) {
+        <section class="welcome card card--cll">
+          <div class="welcome__mark"><app-ai-badge label="AI-written welcome" /></div>
+          <h1>{{ w.greeting }}</h1>
+          <p class="welcome__q">{{ w.question }}</p>
+
+          <div class="ask">
+            <input
+              type="text"
+              [(ngModel)]="inquiryText"
+              (keyup.enter)="ask()"
+              placeholder="Type your question here, then press Enter…"
+              aria-label="Your question"
+              autofocus
+            />
+            <button class="btn" (click)="ask()" [disabled]="asking()">
+              {{ asking() ? 'Thinking…' : 'Ask' }}
+            </button>
+          </div>
+
+          <div class="chips">
+            @for (s of w.suggestions; track s) {
+              <button class="chip" (click)="inquiryText = s; ask()" [disabled]="asking()">{{ s }}</button>
+            }
+          </div>
+        </section>
+      }
+
+      @if (entries().length) {
+        <div class="history">
+          <div class="history__bar">
+            <span class="muted small">
+              {{ entries().length }} response{{ entries().length === 1 ? '' : 's' }} · newest first
+            </span>
+            <button class="btn btn--ghost" (click)="clearHistory()">Clear history</button>
+          </div>
+
+          @for (entry of entries(); track entry.id) {
+            <section
+              class="response"
+              [id]="'response-' + entry.id"
+              [class.response--flash]="entry.id === highlightedId()">
+              <div class="response__head">
+                <div>
+                  <span class="muted small">
+                    {{ entry.queries.length > 1
+                        ? 'You asked, in ' + entry.queries.length + ' ways'
+                        : 'You asked' }}
+                  </span>
+                  @for (q of entry.queries; track q) {
+                    <p class="response__query">"{{ q }}"</p>
+                  }
+                </div>
+              </div>
+
+              <div class="response__meta">
+                <span class="pill"
+                  [class.pill--good]="entry.result.deterministic"
+                  [class.pill--warn]="!entry.result.deterministic">
+                  {{ entry.result.deterministic ? 'Standard response · same for all borrowers' : 'Personalized for your account' }}
+                </span>
+                <span class="muted small">Topic: {{ entry.result.label }}</span>
+                <!-- Driven straight off DETERMINISM_POLICY: non-deterministic
+                     topics are answered by the cognitive region. -->
+                @if (!entry.result.deterministic) {
+                  <app-ai-badge />
+                }
+              </div>
+
+              <!-- The frame comes off the SAME flag as the AI badge above:
+                   DETERMINISM_POLICY, stamped by the core from the map bound in
+                   configuration/. Flip a category there and the border, tint and
+                   tag all follow — no answer component knows which region it is
+                   drawn in. -->
+              <div
+                class="grid response__grid"
+                [class.region--bll]="entry.result.deterministic"
+                [class.region--cll]="!entry.result.deterministic">
+                @switch (entry.result.category) {
+                  @case ('NEXT_PAYMENT') {
+                    <app-next-payment [user]="u" />
+                  }
+                  @case ('LOAN_BALANCE') {
+                    <app-loan-balance [user]="u" />
+                  }
+                  @case ('EXTRA_PAYMENT') {
+                    <app-make-payment [user]="u" />
+                  }
+                  @case ('PROFILE_UPDATE') {
+                    <app-update-profile [user]="u" />
+                  }
+                  @case ('PAYMENT_HISTORY') {
+                    <app-payment-history [user]="u" />
+                  }
+                  @case ('PROFILE_HISTORY') {
+                    <app-profile-history [user]="u" />
+                  }
+                  @case ('HARDSHIP') {
+                    <app-job-opportunities [user]="u" />
+                  }
+                  @case ('LIFE_EVENT') {
+                    <app-interest-relief [user]="u" />
+                  }
+                  @case ('REPAYMENT_OPTIONS') {
+                    <app-repayment-options [user]="u" />
+                  }
+                  @default {
+                    <app-general-help [user]="u" />
+                  }
+                }
+              </div>
+            </section>
+          }
+        </div>
+      }
+
+      <!-- Always-on cards. Not inquiry categories, so there is no policy flag to
+           read: AccountSummaryPort and ChatInsightsPort are cognitive
+           unconditionally, exactly as the AI badge inside them already asserts. -->
+      <div class="insights-panel region--cll">
+        <!-- Tracked by the user OBJECT: a recorded payment replaces it in the session,
+             which re-creates the card so its figures and narration are re-fetched. -->
+        @for (current of [u]; track current) {
+          <app-account-summary [user]="current" />
+        }
+        <app-chat-insights [user]="u" />
+      </div>
+    </main>
+  </div>
+}
