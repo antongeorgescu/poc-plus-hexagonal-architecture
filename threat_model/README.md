@@ -143,7 +143,7 @@ Every artifact has one accountable **team**, always one of seven: **Product**, *
 | **Ops / platform** | DevOps | The deployment diagram, the deployment configuration and policy-as-code recorded in the risk register, deployment, backups, logging and TLS, to the design Architecture owns |
 | **App ops lead** | AppOps | The logging and monitoring requirements, incident response and recovery plans, and running them |
 | **Privacy officer** | Cybersecurity | The privacy model, retention, notice and the Azure decision |
-| **Security assessor** | Cybersecurity | The security requirements, and independent review and authorization |
+| **Security assessor** | Cybersecurity | The security requirements, the penetration test report, and independent review and authorization |
 
 Roles are placeholders; assign people in the remediation plan.
 

@@ -1,7 +1,8 @@
 # Self-Service Loan Servicing — Hexagonal Architecture POC
 
-An Angular 18 re-implementation of the same self-service loan-servicing POC as its
-siblings (`../ntier_architecture`, `../clean_architecture`), re-expressed strictly
+__Disclaimer__: the Student Loan Portal is a fictitious application built with mock data. It uses no proprietary data or implementations, and the pattern applies to any line of business. The implementation uses generic use cases, applicable to any loan system, and synthetically generated data.
+
+This implementation uses a popular stack for light POCs (Angular / SQLite / NodeJS) by using the design defined 
 in **Alistair Cockburn's Hexagonal Architecture (Ports & Adapters)**.
 
 The whole point of this POC is to make the **ports-and-adapters boundary** visible:

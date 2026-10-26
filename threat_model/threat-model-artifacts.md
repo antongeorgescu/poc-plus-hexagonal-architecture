@@ -19,10 +19,11 @@ The artifacts that make up the threat model for the Hexagonal Student-Loan POC, 
 | 13 | Security-Annotated Sequence Diagrams | [sequence-diagrams.md](sequence-diagrams.md) | Optional | Security-annotated sequence diagrams for login, payment and profile update, today and target, with PNG renders. | Development | Implementation |
 | 14 | Security Test Plan (with Traceability Matrix) | [security-test-plan.md](security-test-plan.md) | Required | 31 security tests tied to threats and attack paths, with the results observed on 2026-10-25 and the commands to rerun them. | QA | Testing |
 | 15 | Generate attack paths test cases | [attack-path-test-cases.md](test_cases/attack-path-test-cases.md) | Required | Twelve end-to-end scenarios (AT-01 to AT-12), one per attack path plus a chained takeover and a detection check, each with steps, the point where the attack must be stopped and the secure result expected. | QA | Testing |
-| 16 | TRA Update: Deployment Configuration and Policy-as-Code | [itsg-33-risk-register.md](itsg-33-risk-register.md) | Required | DevOps updates this document (the Threat and Risk Assessment) with the deployment configuration and policy-as-code: which control each setting and rule implements, and the evidence that it is in force. | DevOps | Deployment |
-| 17 | Deployment Diagram | [target-deployment.drawio](target-deployment.drawio) · [target-deployment.png](target-deployment.png) | Required | The production layout the fixes build toward: trust zones, edge, secrets, logging, backups and where each control sits. | DevOps | Deployment |
-| 18 | Security Logging and Monitoring Requirements, Incident Response Plan and Recovery Plan | [logging-incident-recovery.md](logging-incident-recovery.md) | Required | Audit-event catalogue, detections, incident-response playbooks, and backup and restore requirements. | AppOps | Operations |
-| 19 | Threat Model Index and Maintenance Guide | [README.md](README.md) | Required | Index of the folder, identifier conventions, status snapshot, and the rules for keeping the threat model current. | Cybersecurity | Operations |
+| 16 | PenTest Report | To be produced (no file yet) | Required | Findings from an authorised penetration test of the running system: scope and rules of engagement, method, and each finding with severity, evidence and steps to reproduce, plus the retest result once fixes are in. It confirms or refutes the threat model and feeds new findings back into the risk register and remediation plan. | Cybersecurity | Testing |
+| 17 | TRA Update: Deployment Configuration and Policy-as-Code | [itsg-33-risk-register.md](itsg-33-risk-register.md) | Required | DevOps updates this document (the Threat and Risk Assessment) with the deployment configuration and policy-as-code: which control each setting and rule implements, and the evidence that it is in force. | DevOps | Deployment |
+| 18 | Deployment Diagram | [target-deployment.drawio](target-deployment.drawio) · [target-deployment.png](target-deployment.png) | Required | The production layout the fixes build toward: trust zones, edge, secrets, logging, backups and where each control sits. | DevOps | Deployment |
+| 19 | Security Logging and Monitoring Requirements, Incident Response Plan and Recovery Plan | [logging-incident-recovery.md](logging-incident-recovery.md) | Required | Audit-event catalogue, detections, incident-response playbooks, and backup and restore requirements. | AppOps | Operations |
+| 20 | Threat Model Index and Maintenance Guide | [README.md](README.md) | Required | Index of the folder, identifier conventions, status snapshot, and the rules for keeping the threat model current. | Cybersecurity | Operations |
 
 ---
 
@@ -57,7 +58,7 @@ One team is accountable for each artifact: it answers for the content being corr
 | **QA** | Proving it: the security test plan, its traceability matrix, the attack-path test cases and the test results |
 | **DevOps** | Deploying it: the deployment diagram, its update of the risk assessment with deployment configuration and policy-as-code, and the platform, TLS, secrets and backups |
 | **AppOps** | Running the application and responding when it is attacked or fails: security logging and monitoring, the incident response plan and the recovery plan |
-| **Cybersecurity** | Finding and rating the threats, and specifying what the system must do about them: the security requirements, attack paths and privacy analysis |
+| **Cybersecurity** | Finding and rating the threats, and specifying what the system must do about them: the security requirements, attack paths, privacy analysis and the penetration test report |
 
 Operations and platform work (TLS, backups, secrets, monitoring) is carried out by DevOps, with AppOps running monitoring and response, with QA verifying the controls and Development and QA reviewing the requirements so they are buildable and testable, to the target design that Architecture owns and the detections that Cybersecurity defines. The named roles used in the [remediation plan](remediation-plan.md) (for example "Dev lead" and "Ops / platform") are the people who do the work inside these teams.
 
@@ -70,7 +71,7 @@ The phase in which the artifact is first needed. Most are kept current afterward
 | **Requirements** | Decide what must be protected and what the system shall do about threats | Data inventory; security requirements |
 | **Design** | Describe the architecture, analyse threats and decide how the system will defend itself | Architecture diagram, threat model, authentication design, attack paths, privacy model, LLM checklist, decision records |
 | **Implementation** | Build the fixes and produce build-time evidence | Risk register (TRA), third-party review, remediation plan, sequence diagrams |
-| **Testing** | Prove the controls work | Security test plan; attack-path test cases |
+| **Testing** | Prove the controls work | Security test plan; attack-path test cases; penetration test report |
 | **Deployment** | Release to the target environment as designed, and record how it is configured and governed | Deployment diagram; the DevOps update of the risk assessment (deployment configuration and policy-as-code) |
 | **Operations** | Run, monitor, respond and maintain | Logging, incident and recovery; the index and maintenance rules |
 
@@ -80,6 +81,6 @@ The phase in which the artifact is first needed. Most are kept current afterward
 
 | Measure | Count |
 |---|---|
-| Artifacts | 19 |
-| Required | 17 |
+| Artifacts | 20 |
+| Required | 18 |
 | Optional | 2 |
