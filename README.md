@@ -35,9 +35,9 @@ no port at all.</sub>
 
 ## Architecture at a glance
 
-[![Hexagonal architecture of the loan-servicing POC](architect_references/original/hex-architecture.png)](architect_references/original/hex-architecture.png)
+[![Hexagonal architecture of the loan-servicing POC](architect_references/realignment_01/hex-architecture.png)](architect_references/realignment_01/hex-architecture.png)
 
-*Click the image for full size. Editable source: [`architect_references/original/hex-architecture.drawio`](architect_references/original/hex-architecture.drawio)
+*Click the image for full size. Editable source: [`architect_references/realignment_01/hex-architecture.drawio`](architect_references/realignment_01/hex-architecture.drawio)
 (open in [draw.io](https://app.diagrams.net); Sketch style).*
 
 Read it left to right: the **Angular UI** (driving adapters) calls the core only through
@@ -45,7 +45,8 @@ Read it left to right: the **Angular UI** (driving adapters) calls the core only
 the outside world only through **driven ports**; each driven port is implemented by an
 **adapter** that talks to a local **data API**, which alone opens the **SQLite** file. The
 dashed boundary marks what runs in the browser. ★ marks the record look-ups (payment and
-profile history). The sections below explain each ring in detail.
+profile history); the program-of-study card and the `created_by` audit field came with the
+latest schema. The sections below explain each ring in detail.
 
 ## Layering (folders under `src/app/`)
 
@@ -79,12 +80,13 @@ invariant is in the wrong place, and one holding only declarations is a
 src/app/
 ├── core/                         # THE HEXAGON — pure TypeScript, ZERO @angular
 │   ├── domain/                   #   entities + ALL money math / rules
-│   │   ├── user.entity.ts
+│   │   ├── user.entity.ts        #   borrower + the ProgramOfStudy their loan financed
 │   │   ├── loan.entity.ts        #   paid %, months-to-maturity
 │   │   ├── payment.entity.ts     #   snapshot, payoff, validation, references
 │   │   ├── borrower.entity.ts    #   profile, standing, contact validation
 │   │   ├── eligibility.entity.ts #   rate-relief decision + money math
 │   │   ├── date.utility.ts       #   parses yyyy-MM-dd as a LOCAL calendar date
+│   │   ├── actor.utility.ts      #   parses/describes a created_by actor ('user:<id>' | 'agent:<id>')
 │   │   ├── inquiry.type.ts       #   shared kernel — the topic taxonomy
 │   │   ├── job-posting.type.ts   #   shared kernel — crosses the whole hexagon
 │   │   └── sentiment.type.ts     #   shared kernel — sentiment label + tone
@@ -155,8 +157,8 @@ src/assets/                       # static files
 
 db/                               # DATA — the system of record for borrowers (SQLite)
 ├── schema.sql                    #   borrower, program_of_study (catalogue), borrower_contact, loan, payment (current schedule), payment_history (ledger, with created_by), profile_update_history (with created_by), chat_history, job_posting, user_authentication
-├── build.mjs                     #   node db/build.mjs — (re)creates data/loanservicing.db from an inline seed of 6 borrowers; seeds 43 payments and 15 profile updates of history, the 20-posting job catalog and 6 chat histories
-├── seed-data.mjs                 #   the job catalog (20 postings) and chat history (6 borrowers) loaded by build.mjs
+├── build.mjs                     #   node db/build.mjs — (re)creates data/loanservicing.db from an inline seed of 6 borrowers; seeds the 6-program catalogue, 43 payments and 15 profile updates of history (each stamped `created_by` user or agent), the 20-posting job catalog and 6 chat histories
+├── seed-data.mjs                 #   the program catalogue (6 programs), job catalog (20 postings) and chat history (6 borrowers) loaded by build.mjs
 └── data/loanservicing.db         #   git-ignored; opened ONLY by server/api.mjs, never sent to the browser
 
 server/
@@ -166,14 +168,15 @@ server/
                                   #   classification.cases.mjs + keyword-router.test.mjs (the regression table)
 
 architect_references/             # DEEP-DIVE DOCS (markdown + a PDF rendering of each)
-├── original/                     #   the original reference set, kept together
-│   ├── project_swagger.md        #     every component, port and operation — the "parts"
-│   ├── inquiry_scenario_end_to_end.md  one request traced through every layer — the "journey"
-│   ├── hex-architecture.drawio   #     the architecture as one diagram (draw.io, Sketch style) — editable source
-│   ├── hex-architecture.png      #     PNG export of the diagram above
-│   ├── erd-schema.drawio / .png  #     entity-relationship diagram of the database (original schema)
-│   └── sample-questions.txt      #     example questions for the keyword model
-└── realignment_01/               #   working folder
+├── original/                     #   the first reference set (pre program-of-study / created_by), kept for comparison
+└── realignment_01/               #   the CURRENT set, regenerated against the code and db/schema.sql
+    ├── project_swagger.md / .pdf #     every component, port and operation — the "parts"
+    ├── inquiry_scenario_end_to_end.md / .pdf  one request traced through every layer — the "journey"
+    ├── hex-architecture.drawio   #     the architecture as one diagram (draw.io, Sketch style) — editable source
+    ├── hex-architecture.png      #     PNG export of the diagram above
+    ├── erd-schema.drawio / .png  #     entity-relationship diagram of the database (current schema)
+    ├── sample-questions.txt      #     example questions for the keyword model (incl. program of study)
+    └── change_manifest.md        #     every change made versus original/, with before/after diagrams
 ```
 
 **Why the data sits in files.** Nothing in `core/` or `ports/` names any of those
@@ -278,7 +281,14 @@ The N-Tier sibling expresses the same guarantee a third way, as a runtime
   (Account Summary + Conversation Insights with a sentiment tone-meter); an "Ask"
   box routing free-text to answer components — `NEXT_PAYMENT`, `LOAN_BALANCE`,
   `EXTRA_PAYMENT` → make-payment, `PROFILE_UPDATE` → update-profile, `PAYMENT_HISTORY` →
-  payment-history, `PROFILE_HISTORY` → profile-history, else `GENERAL`.
+  payment-history, `PROFILE_HISTORY` → profile-history, `PROGRAM_OF_STUDY` → program-of-study,
+  else `GENERAL`.
+- **Program of study.** Each loan belongs to a program from the `program_of_study` catalogue
+  (code, name, field, credential level, duration, annual tuition, co-op). The program card
+  shows all of it, and the loan-balance card shows the program name.
+- **Who recorded it.** Every `payment_history` and `profile_update_history` row carries
+  `created_by` (`user:<id>` or `agent:<id>`); both history cards show it as "Recorded by".
+  The API takes it from the request as a *claim* — it is not authenticated in this POC.
 - Two **record look-ups**: *"Show me my payment history"* lists every payment made,
   newest first, with the running total; *"Show me my profile update history"* lists the
   contact updates, newest first, marking the fields each one changed. Both open from the
@@ -351,7 +361,7 @@ then tune `intents.mjs` — the older rows stop you fixing one question by break
 
 **Limits.** It matches words, not meaning: a paraphrase that contains none of your keywords
 falls through to `GENERAL`, and irregular forms (`made`/`make`) need their own keyword.
-For a closed set of ten topics that is a fair trade for something predictable, explainable
+For a closed set of eleven topics that is a fair trade for something predictable, explainable
 and free of any external service. If the API is unreachable the adapter abstains (no topic,
 neutral copy) rather than failing the page.
 
@@ -403,7 +413,7 @@ The CLL/BLL split survives the upgrade, and the adapter is where that is enforce
   already computed from the deterministic region; the system prompts forbid
   inventing, recomputing or re-rounding any number, date, rate or amount.
 - **It never decides what a category means.** `classifyInquiry` proposes one of
-  the nine fixed labels or `null`. An unrecognised or unparseable answer becomes
+  the fixed labels or `null`. An unrecognised or unparseable answer becomes
   `null` — "no opinion" — which `InquiryService` already collapses to `GENERAL`.
   The determinism policy stays in the core.
 - **It never fails the user.** Any timeout, non-2xx, transport error, content
@@ -450,7 +460,7 @@ npm start             # dev server at http://localhost:4200, proxies /api to the
 All six demo accounts use the password **demo123**.
 
 **Payments and profile updates are real.** Submitting the Make Payment form records a row in
-`payment_history` and updates the borrower's `loan` and `payment` rows in one
+`payment_history` (stamped with `created_by`) and updates the borrower's `loan` and `payment` rows in one
 transaction. The domain decides (validation, balance, schedule change) in
 `core/domain/payment.entity.ts`; `PaymentRepositoryPort` only stores the result. The
 API also refuses a stale or inconsistent write. Saving the Update Profile form works the
@@ -467,9 +477,10 @@ deployed build needs the data API behind the same `/api` path.
 | *Show me my payment history* · *What payments have I made?* | `PAYMENT_HISTORY` |
 | *I want to update my profile* | `PROFILE_UPDATE` |
 | *Show me my profile update history* · *What have I changed on my profile?* | `PROFILE_HISTORY` |
+| *Tell me about my program of study* · *How long is my program?* | `PROGRAM_OF_STUDY` |
 | *I lost my job and can't make payments* | `HARDSHIP` |
 
-The two history questions are also offered as chips on every borrower's welcome panel.
+The two history questions and the program-of-study question are also offered as chips on every borrower's welcome panel.
 They are added by the core (`PersonalizationService`), so they appear whichever language
 model is bound.
 
@@ -477,9 +488,11 @@ model is bound.
 
 | Document | What it covers |
 | --- | --- |
-| [`architect_references/original/hex-architecture.png`](architect_references/original/hex-architecture.png) | The whole architecture on one page: driving UI → driving ports → core (BLL + CLL) → driven ports → adapters → data API → SQLite. Editable source: [`hex-architecture.drawio`](architect_references/original/hex-architecture.drawio) (open in draw.io; Sketch style). |
+| [`architect_references/realignment_01/hex-architecture.png`](architect_references/realignment_01/hex-architecture.png) | The whole architecture on one page: driving UI → driving ports → core (BLL + CLL) → driven ports → adapters → data API → SQLite. Editable source: [`hex-architecture.drawio`](architect_references/realignment_01/hex-architecture.drawio) (open in draw.io; Sketch style). |
 | [`PORTS.md`](PORTS.md) | The interface reference — every port, operation and schema. The Swagger page for the core. |
-| [`architect_references/original/project_swagger.md`](architect_references/original/project_swagger.md) | The full component inventory: all 56 files by ring, the wiring table, sequence flows. |
-| [`architect_references/original/inquiry_scenario_end_to_end.md`](architect_references/original/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
+| [`architect_references/realignment_01/project_swagger.md`](architect_references/realignment_01/project_swagger.md) | The full component inventory: all 60 files by ring, the wiring table, sequence flows. |
+| [`architect_references/realignment_01/inquiry_scenario_end_to_end.md`](architect_references/realignment_01/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
 
-Both `architect_references/original/` documents ship with a PDF rendering alongside the markdown.
+Both `architect_references/realignment_01/` documents ship with a PDF rendering alongside the markdown.
+[`change_manifest.md`](architect_references/realignment_01/change_manifest.md) lists everything that changed
+since the set in `architect_references/original/`.
