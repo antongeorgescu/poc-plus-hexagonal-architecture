@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
 import { ContactField, ProfileUpdateHistory } from '../../../../core/domain/borrower.entity';
+import { describeActor } from '../../../../core/domain/actor.utility';
 import { ProfilePort } from '../../../../ports/driving/profile.port';
 import { PROFILE_PORT } from '../../../../configuration/tokens';
 
@@ -41,6 +42,7 @@ import { PROFILE_PORT } from '../../../../configuration/tokens';
                 <span class="update__when">{{ u.recordedAt | date: 'medium' }}</span>
                 <span class="ref">{{ u.referenceNumber }}</span>
               </div>
+              <div class="update__by">Recorded by {{ recordedBy(u.createdBy) }}</div>
               @for (f of fields; track f.key) {
                 <div class="update__row" [class.update__row--changed]="isChanged(u.changed, f.key)">
                   <span class="update__label">{{ f.label }}</span>
@@ -93,6 +95,11 @@ import { PROFILE_PORT } from '../../../../configuration/tokens';
       }
       .update__when {
         font-weight: 600;
+      }
+      .update__by {
+        margin: -0.2rem 0 0.4rem;
+        font-size: 0.8rem;
+        color: var(--muted, #5b6b7d);
       }
       .update__row {
         display: grid;
@@ -161,6 +168,11 @@ export class ProfileHistoryComponent implements OnChanges {
     if (id !== this.requestId) return;
     this.history.set(history);
     this.loading.set(false);
+  }
+
+  /** 'You' for the borrower's own updates, 'Agent <id>' for staff-assisted ones. */
+  recordedBy(createdBy: string): string {
+    return describeActor(createdBy, this.user.username);
   }
 
   isChanged(changed: ContactField[] | null, field: ContactField): boolean {

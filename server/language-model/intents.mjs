@@ -46,6 +46,19 @@ export const INTENTS = {
     ],
   },
 
+  PROGRAM_OF_STUDY: {
+    priority: 98,
+    terms: [
+      ['program of study', 5], ['program detail', 5], ['program code', 5], ['field of study', 5],
+      ['what am i studying', 6], ['what did i study', 6], ['what i studied', 6], ['what i study', 6],
+      ['my program', 4], ['my course', 4], ['my degree', 4], ['my diploma', 4], ['my credential', 4],
+      ['tuition', 4], ['program * length|duration', 4], ['how long * program', 4],
+      ['about * program', 3], ['credential', 3],
+    ],
+    // 'program' also names the repayment-assistance programs, and 'course' a course of action.
+    negative: [['assistance', 4], ['relief', 4], ['repayment', 4], ['rate', 3], ['job', 3]],
+  },
+
   // ------------------------------------------------------------------ actions
   EXTRA_PAYMENT: {
     priority: 90,

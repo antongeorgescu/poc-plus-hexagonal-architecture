@@ -11,15 +11,31 @@
 export type UserType = 1 | 2 | 3;
 
 /**
+ * The program of study a loan financed, from the program catalogue (program_of_study).
+ * Reference data: the same program is the same for every borrower enrolled in it.
+ */
+export interface ProgramOfStudy {
+  code: string; // catalogue code, e.g. 'CS-BSC'
+  name: string; // what the borrower sees, e.g. 'Computer Science'
+  fieldOfStudy: string; // broad grouping, e.g. 'Technology'
+  credentialLevel: string; // e.g. "Bachelor's degree", 'Diploma'
+  durationMonths: number;
+  annualTuition: number;
+  coOp: boolean; // true = the program includes paid work terms
+  description: string;
+}
+
+/**
  * One borrower record, as a typed entity. The repository assembles it from the
- * borrower, loan, payment and user_authentication tables (one row per borrower).
+ * borrower, loan, program_of_study, payment and user_authentication tables (one row per borrower).
  */
 export interface User {
   username: string;
   firstName: string;
   lastName: string;
   userType: UserType;
-  programOfStudy: string;
+  programOfStudy: string; // = program.name, kept for the callers that only need the name
+  program: ProgramOfStudy;
   city: string;
   province: string;
   originalAmount: number;

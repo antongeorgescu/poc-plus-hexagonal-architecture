@@ -21,6 +21,7 @@ export type InquiryCategory =
   | 'PROFILE_UPDATE'
   | 'PAYMENT_HISTORY'
   | 'PROFILE_HISTORY'
+  | 'PROGRAM_OF_STUDY'
   | 'HARDSHIP'
   | 'LIFE_EVENT'
   | 'REPAYMENT_OPTIONS'

@@ -1,11 +1,12 @@
 // Builds db/data/loanservicing.db (SQLite) from schema.sql, the inline seed below, and
-// seed-data.mjs (the job catalog and chat history).
+// seed-data.mjs (the program catalogue, job catalog and chat history).
 // Usage: node db/build.mjs   (requires Node 22+ for node:sqlite)
+//   DB_FILE=/path/to.db node db/build.mjs      write somewhere other than db/data/
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { JOB_POSTINGS, CHAT_HISTORY } from './seed-data.mjs';
+import { PROGRAMS, JOB_POSTINGS, CHAT_HISTORY } from './seed-data.mjs';
 
 // One entry per borrower: [borrower, loan, payment, user_authentication] fields.
 const SEED = [
@@ -37,9 +38,15 @@ const SEED = [
 // Dates line up with each borrower's nextPaymentDate / onTimeStreak above. balance_after
 // is computed BACKWARDS from the loan's current balance, so the last row always equals
 // loan.current_balance and each earlier row is what the loan plausibly was then.
+//
+// created_by: every row says who created it. The default is the borrower themselves
+// ('user:<username>'); a few rows are tagged with a servicing agent ('agent:<id>') to show
+// the assisted case, e.g. a payment taken over the phone for a borrower who is behind.
 const CHK = 'Checking ••••1234', SAV = 'Savings ••••5678', DBT = 'Debit card ••••9012';
-const inst = (date, amount, source = CHK) => ({ date, amount, applyTo: 'NEXT_INSTALLMENT', source });
-const extra = (date, amount, source = CHK) => ({ date, amount, applyTo: 'PRINCIPAL', source });
+const inst = (date, amount, source = CHK, by) => ({ date, amount, applyTo: 'NEXT_INSTALLMENT', source, by });
+const extra = (date, amount, source = CHK, by) => ({ date, amount, applyTo: 'PRINCIPAL', source, by });
+const AGENT_PAY = 'agent:mlevesque';      // collections agent, payments taken by phone
+const AGENT_PROFILE = 'agent:jpatel';     // contact-centre agent, details changed on a call
 
 const PAYMENT_PLAN = {
   alice: [
@@ -64,12 +71,12 @@ const PAYMENT_PLAN = {
     inst('2026-06-03', 301.75), inst('2026-07-03', 301.75),
   ],
   carol: [
-    inst('2025-12-01', 318.9, DBT), inst('2026-01-02', 318.9, DBT), inst('2026-02-01', 150, DBT),
-    inst('2026-03-01', 318.9, DBT), inst('2026-04-01', 120, DBT),
+    inst('2025-12-01', 318.9, DBT), inst('2026-01-02', 318.9, DBT), inst('2026-02-01', 150, DBT, AGENT_PAY),
+    inst('2026-03-01', 318.9, DBT), inst('2026-04-01', 120, DBT, AGENT_PAY),
   ],
   irene: [
     inst('2025-10-15', 272.4, DBT), inst('2025-11-15', 150, DBT), inst('2025-12-15', 272.4, DBT),
-    inst('2026-01-15', 100, DBT), inst('2026-02-15', 75, DBT),
+    inst('2026-01-15', 100, DBT, AGENT_PAY), inst('2026-02-15', 75, DBT, AGENT_PAY),
   ],
 };
 
@@ -82,7 +89,7 @@ const PROFILE_PLAN = {
   ],
   grace: [
     { date: '2025-10-08', phone: '(604) 555-0178' },
-    { date: '2026-01-15', mailingAddress: '900 West Georgia Street, Vancouver, British Columbia, BC  V6C 2W6' },
+    { date: '2026-01-15', mailingAddress: '900 West Georgia Street, Vancouver, British Columbia, BC  V6C 2W6', by: AGENT_PROFILE },
     { date: '2026-05-02', email: 'grace.kim@proton.me' },
   ],
   bob: [
@@ -92,11 +99,11 @@ const PROFILE_PLAN = {
   henry: [
     { date: '2025-11-18', email: 'henry.osei@gmail.com' },
     { date: '2026-02-24', phone: '(204) 555-0119' },
-    { date: '2026-06-11', mailingAddress: '212 Osborne Street, Winnipeg, Manitoba, MB  R3L 1Z1' },
+    { date: '2026-06-11', mailingAddress: '212 Osborne Street, Winnipeg, Manitoba, MB  R3L 1Z1', by: AGENT_PROFILE },
   ],
   carol: [
     { date: '2026-02-10', phone: '(514) 555-0127' },
-    { date: '2026-04-22', mailingAddress: '455 Rue Saint-Denis, Montreal, Quebec, QC  H2X 3P5' },
+    { date: '2026-04-22', mailingAddress: '455 Rue Saint-Denis, Montreal, Quebec, QC  H2X 3P5', by: AGENT_PROFILE },
     { date: '2026-05-28', email: 'carol.nguyen.design@gmail.com' },
   ],
   irene: [
@@ -125,7 +132,7 @@ const monthsBetween = (a, b) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) 
 /** Payments with refs and balance_after, working back from the loan's current balance. */
 function buildPayments(s) {
   const rand = seededRandom(s.username + ':pay');
-  const rows = PAYMENT_PLAN[s.username].map((p) => ({ ...p, ref: makeRef('PMT', p.date, rand) }));
+  const rows = PAYMENT_PLAN[s.username].map((p) => ({ ...p, ref: makeRef('PMT', p.date, rand), createdBy: p.by ?? `user:${s.username}` }));
   const monthlyRate = s.interestRate / 100 / 12;
   let balance = s.currentBalance;
   for (let k = rows.length - 1; k >= 0; k--) {
@@ -145,9 +152,9 @@ function buildPayments(s) {
 function buildProfileUpdates(username) {
   const rand = seededRandom(username + ':prf');
   let contact = { ...CONTACTS[username] };
-  return PROFILE_PLAN[username].map(({ date, ...change }) => {
+  return PROFILE_PLAN[username].map(({ date, by, ...change }) => {
     contact = { ...contact, ...change };
-    return { date, ref: makeRef('PRF', date, rand), ...contact };
+    return { date, ref: makeRef('PRF', date, rand), createdBy: by ?? `user:${username}`, ...contact };
   });
 }
 
@@ -162,27 +169,30 @@ const CONTACTS = {
 };
 
 const here = dirname(fileURLToPath(import.meta.url));
-const dbFile = join(here, 'data', 'loanservicing.db');
+const dbFile = process.env.DB_FILE || join(here, 'data', 'loanservicing.db');
+const schemaFile = join(here, 'schema.sql');
 
-// The file is reused, not deleted: schema.sql drops and recreates every table, and
+// The file is reused, not deleted: the schema drops and recreates every table, and
 // another process (an editor, an indexer) may hold the file open on Windows.
 mkdirSync(dirname(dbFile), { recursive: true });
 
 const db = new DatabaseSync(dbFile);
-db.exec(readFileSync(join(here, 'schema.sql'), 'utf8'));
+db.exec(readFileSync(schemaFile, 'utf8'));
 
+const insProgram = db.prepare(
+  'INSERT INTO program_of_study(program_code,name,field_of_study,credential_level,duration_months,annual_tuition,co_op,description) VALUES(?,?,?,?,?,?,?,?)');
 const insBorrower = db.prepare(
-  'INSERT INTO borrower(first_name,last_name,user_type,program_of_study,city,province,credit_score) VALUES(?,?,?,?,?,?,?)');
+  'INSERT INTO borrower(first_name,last_name,user_type,city,province,credit_score) VALUES(?,?,?,?,?,?)');
 const insLoan = db.prepare(
-  'INSERT INTO loan(borrower_id,original_amount,current_balance,interest_rate,monthly_payment,maturity_date) VALUES(?,?,?,?,?,?)');
+  'INSERT INTO loan(borrower_id,program_id,original_amount,current_balance,interest_rate,monthly_payment,maturity_date) VALUES(?,?,?,?,?,?,?)');
 const insPayment = db.prepare(
   'INSERT INTO payment(loan_id,next_payment_date,next_payment_amount,payments_made,payments_missed,on_time_streak) VALUES(?,?,?,?,?,?)');
 const insContact = db.prepare(
   'INSERT INTO borrower_contact(borrower_id,email,phone,mailing_address) VALUES(?,?,?,?)');
 const insHistory = db.prepare(
-  'INSERT INTO payment_history(loan_id,reference_number,amount,funding_source,apply_to,effective_date,balance_after,created_at) VALUES(?,?,?,?,?,?,?,?)');
+  'INSERT INTO payment_history(loan_id,reference_number,amount,funding_source,apply_to,effective_date,balance_after,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)');
 const insProfileHistory = db.prepare(
-  'INSERT INTO profile_update_history(borrower_id,reference_number,email,phone,mailing_address,created_at) VALUES(?,?,?,?,?,?)');
+  'INSERT INTO profile_update_history(borrower_id,reference_number,email,phone,mailing_address,created_by,created_at) VALUES(?,?,?,?,?,?,?)');
 const insChat = db.prepare(
   'INSERT INTO chat_history(borrower_id,live_chat_sessions,chatbot_messages,last_contact,tone_score,summary) VALUES(?,?,?,?,?,?)');
 const insJob = db.prepare(
@@ -191,17 +201,24 @@ const insAuth = db.prepare(
   'INSERT INTO user_authentication(username,password,borrower_id) VALUES(?,?,?)');
 
 db.exec('BEGIN');
+// The catalogue goes in first: loan.program_id points at it. Looked up by name below.
+const programIds = new Map();
+for (const p of PROGRAMS) {
+  programIds.set(p.name, insProgram.run(p.code, p.name, p.fieldOfStudy, p.credentialLevel, p.durationMonths, p.annualTuition, p.coOp ? 1 : 0, p.description).lastInsertRowid);
+}
 for (const s of SEED) {
-  const borrowerId = insBorrower.run(s.firstName, s.lastName, s.userType, s.programOfStudy, s.city, s.province, s.creditScore).lastInsertRowid;
-  const loanId = insLoan.run(borrowerId, s.originalAmount, s.currentBalance, s.interestRate, s.monthlyPayment, s.maturityDate).lastInsertRowid;
+  const programId = programIds.get(s.programOfStudy);
+  if (programId === undefined) throw new Error(`${s.username}: unknown program of study '${s.programOfStudy}' (add it to PROGRAMS in seed-data.mjs)`);
+  const borrowerId = insBorrower.run(s.firstName, s.lastName, s.userType, s.city, s.province, s.creditScore).lastInsertRowid;
+  const loanId = insLoan.run(borrowerId, programId, s.originalAmount, s.currentBalance, s.interestRate, s.monthlyPayment, s.maturityDate).lastInsertRowid;
   insPayment.run(loanId, s.nextPaymentDate, s.nextPaymentAmount, s.paymentsMade, s.paymentsMissed, s.onTimeStreak);
   for (const p of buildPayments(s)) {
-    insHistory.run(loanId, p.ref, p.amount, p.source, p.applyTo, p.date, p.balanceAfter, `${p.date} 10:05:00`);
+    insHistory.run(loanId, p.ref, p.amount, p.source, p.applyTo, p.date, p.balanceAfter, p.createdBy, `${p.date} 10:05:00`);
   }
   // borrower_contact holds the contact as it stands after the last recorded update.
   const updates = buildProfileUpdates(s.username);
   for (const u of updates) {
-    insProfileHistory.run(borrowerId, u.ref, u.email, u.phone, u.mailingAddress, `${u.date} 14:30:00`);
+    insProfileHistory.run(borrowerId, u.ref, u.email, u.phone, u.mailingAddress, u.createdBy, `${u.date} 14:30:00`);
   }
   const c = updates[updates.length - 1];
   insContact.run(borrowerId, c.email, c.phone, c.mailingAddress);
@@ -214,7 +231,7 @@ for (const j of JOB_POSTINGS) {
 }
 db.exec('COMMIT');
 
-for (const t of ['borrower', 'loan', 'payment', 'payment_history', 'borrower_contact', 'profile_update_history', 'chat_history', 'job_posting', 'user_authentication']) {
+for (const t of ['program_of_study', 'borrower', 'loan', 'payment', 'payment_history', 'borrower_contact', 'profile_update_history', 'chat_history', 'job_posting', 'user_authentication']) {
   console.log(t.padEnd(20), db.prepare(`SELECT COUNT(*) n FROM ${t}`).get().n);
 }
 db.exec('VACUUM');

@@ -35,6 +35,8 @@ export interface PaymentHistoryEntry {
   applyTo: PaymentApplyTo;
   effectiveDate: string; // ISO yyyy-mm-dd
   balanceAfter: number;
+  /** Who created the record: 'user:<name>' (the borrower) or 'agent:<id>' (servicing staff). */
+  createdBy: string;
   recordedAt: string; // ISO instant
 }
 

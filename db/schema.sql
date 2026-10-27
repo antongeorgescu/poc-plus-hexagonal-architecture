@@ -1,4 +1,10 @@
 -- SQLite schema. Build the database file with: node db/build.mjs
+--
+-- Two things worth knowing up front:
+--   [1] program_of_study is the program catalogue. loan.program_id is a foreign key to it, so a
+--       loan says WHICH program it financed. There is no free-text program on borrower: the
+--       name comes from the catalogue, so it cannot drift.
+--   [2] payment_history and profile_update_history carry created_by: who created the row.
 PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS chat_history;
@@ -9,22 +15,39 @@ DROP TABLE IF EXISTS payment_history;
 DROP TABLE IF EXISTS payment;
 DROP TABLE IF EXISTS user_authentication;
 DROP TABLE IF EXISTS loan;
+DROP TABLE IF EXISTS program_of_study;
 DROP TABLE IF EXISTS borrower;
 
 CREATE TABLE borrower (
-  borrower_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-  first_name       TEXT NOT NULL,
-  last_name        TEXT NOT NULL,
-  user_type        INTEGER NOT NULL CHECK (user_type IN (1,2,3)),
-  program_of_study TEXT NOT NULL,
-  city             TEXT NOT NULL,
-  province         TEXT NOT NULL CHECK (length(province) = 2),
-  credit_score     INTEGER NOT NULL
+  borrower_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  first_name  TEXT NOT NULL,
+  last_name   TEXT NOT NULL,
+  user_type   INTEGER NOT NULL CHECK (user_type IN (1,2,3)),
+  city        TEXT NOT NULL,
+  province    TEXT NOT NULL CHECK (length(province) = 2),
+  credit_score INTEGER NOT NULL
+);
+
+-- [1] The program catalogue: one row per program of study a loan can finance. Reference
+-- data, not borrower data. `name` is what the borrower sees, and what job_posting.program
+-- matches on, so it is unique.
+CREATE TABLE program_of_study (
+  program_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  program_code     TEXT NOT NULL UNIQUE,   -- short catalogue code, e.g. 'CS-BSC'
+  name             TEXT NOT NULL UNIQUE,   -- display name, e.g. 'Computer Science'
+  field_of_study   TEXT NOT NULL,          -- broad grouping, e.g. 'Technology'
+  credential_level TEXT NOT NULL CHECK (credential_level IN
+                     ('Certificate','Diploma','Advanced diploma','Bachelor''s degree','Master''s degree')),
+  duration_months  INTEGER NOT NULL CHECK (duration_months > 0),
+  annual_tuition   REAL NOT NULL CHECK (annual_tuition >= 0),
+  co_op            INTEGER NOT NULL DEFAULT 0 CHECK (co_op IN (0,1)),  -- 1 = includes paid work terms
+  description      TEXT NOT NULL
 );
 
 CREATE TABLE loan (
   loan_id         INTEGER PRIMARY KEY AUTOINCREMENT,
   borrower_id     INTEGER NOT NULL REFERENCES borrower(borrower_id),
+  program_id      INTEGER NOT NULL REFERENCES program_of_study(program_id),   -- [1]
   original_amount REAL NOT NULL,
   current_balance REAL NOT NULL,
   interest_rate   REAL NOT NULL,
@@ -44,6 +67,12 @@ CREATE TABLE payment (
 
 -- One row per payment the borrower actually submitted (written by server/api.mjs).
 -- The payment table above is the loan's CURRENT schedule posture; this is the ledger.
+--
+-- created_by [2] says who created the row, as '<kind>:<identity>':
+--   'user:alice'       the borrower, in self-service
+--   'agent:mlevesque'  a servicing agent acting for the borrower
+-- The CHECK enforces the shape, not the truth: until the API authenticates callers, the
+-- value is only as trustworthy as the request that carried it.
 CREATE TABLE payment_history (
   payment_history_id INTEGER PRIMARY KEY AUTOINCREMENT,
   loan_id            INTEGER NOT NULL REFERENCES loan(loan_id),
@@ -53,6 +82,7 @@ CREATE TABLE payment_history (
   apply_to           TEXT NOT NULL CHECK (apply_to IN ('PRINCIPAL','NEXT_INSTALLMENT')),
   effective_date     TEXT NOT NULL,            -- ISO yyyy-mm-dd
   balance_after      REAL NOT NULL,
+  created_by         TEXT NOT NULL CHECK (created_by GLOB 'user:?*' OR created_by GLOB 'agent:?*'),  -- [2]
   created_at         TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -65,7 +95,7 @@ CREATE TABLE borrower_contact (
 );
 
 -- One row per accepted profile update: the reference the borrower was shown, and
--- the values they ended up with.
+-- the values they ended up with. created_by [2] has the same format as in payment_history.
 CREATE TABLE profile_update_history (
   profile_update_id INTEGER PRIMARY KEY AUTOINCREMENT,
   borrower_id       INTEGER NOT NULL REFERENCES borrower(borrower_id),
@@ -73,6 +103,7 @@ CREATE TABLE profile_update_history (
   email             TEXT NOT NULL,
   phone             TEXT NOT NULL,
   mailing_address   TEXT NOT NULL,
+  created_by        TEXT NOT NULL CHECK (created_by GLOB 'user:?*' OR created_by GLOB 'agent:?*'),  -- [2]
   created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -80,7 +111,7 @@ CREATE TABLE profile_update_history (
 -- location and pay. Pay is an amount plus a unit so the app can format it.
 CREATE TABLE job_posting (
   job_posting_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  program        TEXT NOT NULL,            -- program of study, or 'General' for any field
+  program        TEXT NOT NULL,            -- a program_of_study.name, or 'General' for any field
   title          TEXT NOT NULL,
   company        TEXT NOT NULL,
   city           TEXT NOT NULL,

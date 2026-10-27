@@ -12,14 +12,15 @@ import { LanguageModelPort } from '../../ports/driven/language-model.port';
 import { User } from '../domain/user.entity';
 
 /**
- * Fixed questions that open the two record look-ups. They are business-owned, not
+ * Fixed questions that open the record look-ups. They are business-owned, not
  * model output, so they appear whichever language-model adapter is bound — a model
- * that writes three suggestions of its own still gets these two appended. Each one
- * is worded to land on PAYMENT_HISTORY / PROFILE_HISTORY respectively.
+ * that writes three suggestions of its own still gets these appended. Each one is
+ * worded to land on PAYMENT_HISTORY / PROFILE_HISTORY / PROGRAM_OF_STUDY respectively.
  */
 const RECORD_SUGGESTIONS: readonly string[] = [
   'Show me my payment history',
   'Show me my profile update history',
+  'Tell me about my program of study',
 ];
 
 export class PersonalizationService implements PersonalizationPort {

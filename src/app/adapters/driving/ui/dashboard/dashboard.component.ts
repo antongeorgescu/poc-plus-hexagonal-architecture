@@ -16,6 +16,7 @@ import { MakePaymentComponent } from '../inquiry/make-payment.component';
 import { UpdateProfileComponent } from '../inquiry/update-profile.component';
 import { PaymentHistoryComponent } from '../inquiry/payment-history.component';
 import { ProfileHistoryComponent } from '../inquiry/profile-history.component';
+import { ProgramOfStudyComponent } from '../inquiry/program-of-study.component';
 import { JobOpportunitiesComponent } from '../inquiry/job-opportunities.component';
 import { InterestReliefComponent } from '../inquiry/interest-relief.component';
 import { RepaymentOptionsComponent } from '../inquiry/repayment-options.component';
@@ -76,6 +77,7 @@ interface InquiryEntry {
     UpdateProfileComponent,
     PaymentHistoryComponent,
     ProfileHistoryComponent,
+    ProgramOfStudyComponent,
     JobOpportunitiesComponent,
     InterestReliefComponent,
     RepaymentOptionsComponent,

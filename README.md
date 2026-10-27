@@ -35,9 +35,9 @@ no port at all.</sub>
 
 ## Architecture at a glance
 
-[![Hexagonal architecture of the loan-servicing POC](references/hex-architecture.png)](references/hex-architecture.png)
+[![Hexagonal architecture of the loan-servicing POC](architect_references/original/hex-architecture.png)](architect_references/original/hex-architecture.png)
 
-*Click the image for full size. Editable source: [`references/hex-architecture.drawio`](references/hex-architecture.drawio)
+*Click the image for full size. Editable source: [`architect_references/original/hex-architecture.drawio`](architect_references/original/hex-architecture.drawio)
 (open in [draw.io](https://app.diagrams.net); Sketch style).*
 
 Read it left to right: the **Angular UI** (driving adapters) calls the core only through
@@ -154,7 +154,7 @@ src/assets/                       # static files
 └── ai-config.example.js          #   optional Azure defaults (copy to ai-config.js; git-ignored)
 
 db/                               # DATA — the system of record for borrowers (SQLite)
-├── schema.sql                    #   borrower, borrower_contact, loan, payment (current schedule), payment_history (ledger), profile_update_history, chat_history, job_posting, user_authentication
+├── schema.sql                    #   borrower, program_of_study (catalogue), borrower_contact, loan, payment (current schedule), payment_history (ledger, with created_by), profile_update_history (with created_by), chat_history, job_posting, user_authentication
 ├── build.mjs                     #   node db/build.mjs — (re)creates data/loanservicing.db from an inline seed of 6 borrowers; seeds 43 payments and 15 profile updates of history, the 20-posting job catalog and 6 chat histories
 ├── seed-data.mjs                 #   the job catalog (20 postings) and chat history (6 borrowers) loaded by build.mjs
 └── data/loanservicing.db         #   git-ignored; opened ONLY by server/api.mjs, never sent to the browser
@@ -165,11 +165,15 @@ server/
                                   #   intents.mjs (the keyword registry — edit this), narration.mjs (templated copy),
                                   #   classification.cases.mjs + keyword-router.test.mjs (the regression table)
 
-references/                       # DEEP-DIVE DOCS (markdown + a PDF rendering of each)
-├── project_swagger.md            #   every component, port and operation — the "parts"
-├── inquiry_scenario_end_to_end.md#   one request traced through every layer — the "journey"
-├── hex-architecture.drawio       #   the architecture as one diagram (draw.io, Sketch style) — editable source
-└── hex-architecture.png          #   PNG export of the diagram above
+architect_references/             # DEEP-DIVE DOCS (markdown + a PDF rendering of each)
+├── original/                     #   the original reference set, kept together
+│   ├── project_swagger.md        #     every component, port and operation — the "parts"
+│   ├── inquiry_scenario_end_to_end.md  one request traced through every layer — the "journey"
+│   ├── hex-architecture.drawio   #     the architecture as one diagram (draw.io, Sketch style) — editable source
+│   ├── hex-architecture.png      #     PNG export of the diagram above
+│   ├── erd-schema.drawio / .png  #     entity-relationship diagram of the database (original schema)
+│   └── sample-questions.txt      #     example questions for the keyword model
+└── realignment_01/               #   working folder
 ```
 
 **Why the data sits in files.** Nothing in `core/` or `ports/` names any of those
@@ -473,9 +477,9 @@ model is bound.
 
 | Document | What it covers |
 | --- | --- |
-| [`references/hex-architecture.png`](references/hex-architecture.png) | The whole architecture on one page: driving UI → driving ports → core (BLL + CLL) → driven ports → adapters → data API → SQLite. Editable source: [`hex-architecture.drawio`](references/hex-architecture.drawio) (open in draw.io; Sketch style). |
+| [`architect_references/original/hex-architecture.png`](architect_references/original/hex-architecture.png) | The whole architecture on one page: driving UI → driving ports → core (BLL + CLL) → driven ports → adapters → data API → SQLite. Editable source: [`hex-architecture.drawio`](architect_references/original/hex-architecture.drawio) (open in draw.io; Sketch style). |
 | [`PORTS.md`](PORTS.md) | The interface reference — every port, operation and schema. The Swagger page for the core. |
-| [`references/project_swagger.md`](references/project_swagger.md) | The full component inventory: all 56 files by ring, the wiring table, sequence flows. |
-| [`references/inquiry_scenario_end_to_end.md`](references/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
+| [`architect_references/original/project_swagger.md`](architect_references/original/project_swagger.md) | The full component inventory: all 56 files by ring, the wiring table, sequence flows. |
+| [`architect_references/original/inquiry_scenario_end_to_end.md`](architect_references/original/inquiry_scenario_end_to_end.md) | One borrower request followed through every layer, naming each object as it is constructed. |
 
-Both `references/` documents ship with a PDF rendering alongside the markdown.
+Both `architect_references/original/` documents ship with a PDF rendering alongside the markdown.

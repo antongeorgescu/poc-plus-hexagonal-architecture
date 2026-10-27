@@ -43,6 +43,13 @@ import { LOAN_INFO_PORT } from '../../../../configuration/tokens';
           <span class="stat__label">Maturity date</span>
           <span class="stat__value">{{ loan.maturityDate | date: 'longDate' }}</span>
         </div>
+        <div class="stat">
+          <span class="stat__label">Program of study</span>
+          <span class="stat__value">{{ user.programOfStudy }}</span>
+          @if (user.program; as p) {
+            <span class="muted small">{{ p.credentialLevel }} · {{ p.code }}</span>
+          }
+        </div>
       </div>
     </section>
   `,

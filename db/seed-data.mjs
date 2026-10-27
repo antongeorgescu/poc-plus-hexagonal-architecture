@@ -1,6 +1,32 @@
-// Seed data for the job catalog and the per-borrower chat history.
-// db/build.mjs loads these into the job_posting and chat_history tables; edit here and
-// run `npm run db:build` to change what the app shows.
+// Seed data for the program catalogue, the job catalog and the per-borrower chat history.
+// db/build.mjs loads these into the program_of_study, job_posting and chat_history tables;
+// edit here and run `npm run db:build` to change what the app shows.
+
+/**
+ * The program catalogue (program_of_study). Illustrative values for the demo, not real
+ * institution data. `name` is what borrowers and job postings refer to, so keep it unique
+ * and keep it identical to JOB_POSTINGS[].program.
+ */
+export const PROGRAMS = [
+  { code: 'CS-BSC', name: 'Computer Science', fieldOfStudy: 'Technology', credentialLevel: "Bachelor's degree",
+    durationMonths: 48, annualTuition: 8900, coOp: true,
+    description: 'Software design, algorithms, data structures and systems, with paid work terms in industry.' },
+  { code: 'NURS-BSCN', name: 'Registered Nursing', fieldOfStudy: 'Health sciences', credentialLevel: "Bachelor's degree",
+    durationMonths: 48, annualTuition: 7600, coOp: false,
+    description: 'Clinical nursing practice, anatomy and patient care, with supervised placements in hospitals and clinics.' },
+  { code: 'MECH-BENG', name: 'Mechanical Engineering', fieldOfStudy: 'Engineering', credentialLevel: "Bachelor's degree",
+    durationMonths: 60, annualTuition: 10400, coOp: true,
+    description: 'Design, mechanics, thermodynamics and manufacturing, with paid engineering work terms.' },
+  { code: 'MKTG-ADV', name: 'Marketing', fieldOfStudy: 'Business', credentialLevel: 'Advanced diploma',
+    durationMonths: 36, annualTuition: 6800, coOp: false,
+    description: 'Brand strategy, digital marketing, analytics and consumer behaviour.' },
+  { code: 'GD-DIP', name: 'Graphic Design', fieldOfStudy: 'Arts and design', credentialLevel: 'Diploma',
+    durationMonths: 24, annualTuition: 5900, coOp: false,
+    description: 'Visual communication, typography, layout and digital production for print and screen.' },
+  { code: 'CUL-DIP', name: 'Culinary Arts', fieldOfStudy: 'Hospitality', credentialLevel: 'Diploma',
+    durationMonths: 18, annualTuition: 7200, coOp: false,
+    description: 'Professional cooking, pastry, kitchen operations and food safety.' },
+];
 
 /** Job postings, one per row. Pay is an amount + a unit ('yr' | 'hr'); the app formats it. */
 export const JOB_POSTINGS = [

@@ -65,8 +65,8 @@ for the model reason.
 eligibility, identity. Ports marked **CLL** interpret, narrate and personalise;
 they never compute an authoritative value, and they obtain one only by calling a
 BLL driving port themselves. For the mechanism in detail see
-[`references/project_swagger.md`](references/project_swagger.md); to watch it happen
-on one request, [`references/inquiry_scenario_end_to_end.md`](references/inquiry_scenario_end_to_end.md).
+[`architect_references/original/project_swagger.md`](architect_references/original/project_swagger.md); to watch it happen
+on one request, [`architect_references/original/inquiry_scenario_end_to_end.md`](architect_references/original/inquiry_scenario_end_to_end.md).
 
 ---
 

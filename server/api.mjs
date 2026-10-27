@@ -1,10 +1,12 @@
 // Local API in front of db/data/loanservicing.db — the only process that touches the file.
 // The Angular dev server proxies /api to it (see proxy.conf.js).
-//   POST /api/login     { username, password }       -> 200 { user } | 401
+//   POST /api/login     { username, password }       -> 200 { user } | 401   (user includes its program of study)
 //   POST /api/payments  PaymentRecord                -> 201 { success, message, user } | 400 | 404 | 409
 //   POST /api/profile   ProfileRecord                -> 201 { success, message, user } | 400 | 404 | 409
-//   GET  /api/payments/history?username=             -> 200 { success, entries } | 400 | 404
-//   GET  /api/profile/history?username=              -> 200 { success, entries } | 400 | 404
+//     Both writes take an optional createdBy ('user:<name>' | 'agent:<id>'); it defaults to the
+//     borrower. It is recorded in the history row, NOT authenticated: see actorOf below.
+//   GET  /api/payments/history?username=             -> 200 { success, entries } | 400 | 404   (each entry has createdBy)
+//   GET  /api/profile/history?username=              -> 200 { success, entries } | 400 | 404   (each entry has createdBy)
 //   GET  /api/jobs?program=                          -> 200 { success, postings } | 400   (grounding data)
 //   GET  /api/chat-history?username=                 -> 200 { success, record | null } | 400 | 404
 //   POST /api/language-model/classify         { text, candidates? } -> { category | null, scores, matched }
@@ -30,7 +32,9 @@ const db = new DatabaseSync(DB_FILE);
 db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 3000;');
 
 const USER_SQL = `
-  SELECT a.username, b.first_name, b.last_name, b.user_type, b.program_of_study,
+  SELECT a.username, b.first_name, b.last_name, b.user_type,
+         pr.name AS program_name, pr.program_code, pr.field_of_study, pr.credential_level,
+         pr.duration_months, pr.annual_tuition, pr.co_op, pr.description AS program_description,
          b.city, b.province, b.credit_score, l.loan_id, l.original_amount,
          l.current_balance, l.interest_rate, l.monthly_payment, l.maturity_date,
          p.next_payment_date, p.next_payment_amount, p.payments_made,
@@ -40,6 +44,7 @@ const USER_SQL = `
     FROM user_authentication a
     JOIN borrower b ON b.borrower_id = a.borrower_id
     JOIN loan l     ON l.borrower_id = b.borrower_id
+    JOIN program_of_study pr ON pr.program_id = l.program_id
     JOIN payment p  ON p.loan_id     = l.loan_id
     LEFT JOIN borrower_contact c ON c.borrower_id = b.borrower_id
    WHERE a.username = ? COLLATE NOCASE`;
@@ -49,18 +54,38 @@ const findPassword = db.prepare('SELECT password FROM user_authentication WHERE 
 /** DB row -> the `User` shape the Angular core uses. Never includes the password. */
 const toUser = (r) => ({
   username: r.username, firstName: r.first_name, lastName: r.last_name,
-  userType: r.user_type, programOfStudy: r.program_of_study, city: r.city, province: r.province,
+  userType: r.user_type, programOfStudy: r.program_name, city: r.city, province: r.province,
   originalAmount: r.original_amount, currentBalance: r.current_balance,
   interestRate: r.interest_rate, monthlyPayment: r.monthly_payment,
   nextPaymentDate: r.next_payment_date, nextPaymentAmount: r.next_payment_amount,
   maturityDate: r.maturity_date, paymentsMade: r.payments_made,
   paymentsMissed: r.payments_missed, onTimeStreak: r.on_time_streak, creditScore: r.credit_score,
   email: r.email, phone: r.phone, mailingAddress: r.mailing_address,
+  program: {
+    code: r.program_code, name: r.program_name, fieldOfStudy: r.field_of_study,
+    credentialLevel: r.credential_level, durationMonths: r.duration_months,
+    annualTuition: r.annual_tuition, coOp: r.co_op === 1, description: r.program_description,
+  },
 });
 
+/**
+ * Who a history row is attributed to, as 'user:<name>' or 'agent:<id>'. Defaults to the
+ * borrower. The caller may name an agent instead, but nothing here proves the caller IS that
+ * agent: the API has no authentication yet, so created_by records a claim. It becomes
+ * evidence once the identity comes from a verified session instead of the request body.
+ */
+const ACTOR = /^(user|agent):[A-Za-z0-9._-]{1,40}$/;
+function actorOf(body, row) {
+  if (body.createdBy === undefined) return `user:${row.username}`;
+  if (typeof body.createdBy !== 'string' || !ACTOR.test(body.createdBy)) {
+    throw new HttpError(400, 'createdBy must look like user:<name> or agent:<id>.');
+  }
+  return body.createdBy;
+}
+
 const insHistory = db.prepare(`INSERT INTO payment_history
-  (loan_id, reference_number, amount, funding_source, apply_to, effective_date, balance_after)
-  VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  (loan_id, reference_number, amount, funding_source, apply_to, effective_date, balance_after, created_by)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
 const updLoan = db.prepare('UPDATE loan SET current_balance = ? WHERE loan_id = ?');
 const updPayment = db.prepare(`UPDATE payment SET next_payment_date = ?, next_payment_amount = ?,
   payments_made = ?, on_time_streak = ? WHERE loan_id = ?`);
@@ -69,18 +94,18 @@ const upsertContact = db.prepare(`INSERT INTO borrower_contact (borrower_id, ema
   VALUES (?, ?, ?, ?) ON CONFLICT(borrower_id) DO UPDATE SET
   email = excluded.email, phone = excluded.phone, mailing_address = excluded.mailing_address`);
 const insProfileHistory = db.prepare(`INSERT INTO profile_update_history
-  (borrower_id, reference_number, email, phone, mailing_address) VALUES (?, ?, ?, ?, ?)`);
+  (borrower_id, reference_number, email, phone, mailing_address, created_by) VALUES (?, ?, ?, ?, ?, ?)`);
 
 const selPaymentHistory = db.prepare(`
   SELECT h.payment_history_id AS id, h.reference_number, h.amount, h.funding_source, h.apply_to,
-         h.effective_date, h.balance_after, h.created_at
+         h.effective_date, h.balance_after, h.created_by, h.created_at
     FROM payment_history h
     JOIN loan l ON l.loan_id = h.loan_id
     JOIN user_authentication a ON a.borrower_id = l.borrower_id
    WHERE a.username = ? COLLATE NOCASE
    ORDER BY h.payment_history_id`);
 const selProfileHistory = db.prepare(`
-  SELECT h.profile_update_id AS id, h.reference_number, h.email, h.phone, h.mailing_address, h.created_at
+  SELECT h.profile_update_id AS id, h.reference_number, h.email, h.phone, h.mailing_address, h.created_by, h.created_at
     FROM profile_update_history h
     JOIN user_authentication a ON a.borrower_id = h.borrower_id
    WHERE a.username = ? COLLATE NOCASE
@@ -130,7 +155,7 @@ function recordPayment(b) {
       throw new HttpError(400, 'Payment does not match the loan balance.');
     }
     insHistory.run(row.loan_id, b.referenceNumber, b.amount, b.fundingSource, b.applyTo,
-      b.effectiveDate, u.currentBalance);
+      b.effectiveDate, u.currentBalance, actorOf(b, row));
     updLoan.run(u.currentBalance, row.loan_id);
     updPayment.run(u.nextPaymentDate, u.nextPaymentAmount, u.paymentsMade, u.onTimeStreak, row.loan_id);
     db.exec('COMMIT');
@@ -165,7 +190,7 @@ function saveProfile(b) {
     const row = findRow.get(b.username.trim());
     if (!row) throw new HttpError(404, 'Borrower not found.');
     upsertContact.run(row.borrower_id, u.email, u.phone, u.mailingAddress);
-    insProfileHistory.run(row.borrower_id, b.referenceNumber, u.email, u.phone, u.mailingAddress);
+    insProfileHistory.run(row.borrower_id, b.referenceNumber, u.email, u.phone, u.mailingAddress, actorOf(b, row));
     db.exec('COMMIT');
     return { status: 201, body: { success: true, message: 'Profile updated.', user: toUser(findRow.get(b.username.trim())) } };
   } catch (e) {
@@ -288,11 +313,11 @@ const routes = {
   'GET /api/payments/history': (_body, query) => readHistory(query, selPaymentHistory, (r) => ({
     id: r.id, referenceNumber: r.reference_number, amount: r.amount, fundingSource: r.funding_source,
     applyTo: r.apply_to, effectiveDate: r.effective_date, balanceAfter: r.balance_after,
-    recordedAt: asInstant(r.created_at),
+    createdBy: r.created_by, recordedAt: asInstant(r.created_at),
   })),
   'GET /api/profile/history': (_body, query) => readHistory(query, selProfileHistory, (r) => ({
     id: r.id, referenceNumber: r.reference_number, email: r.email, phone: r.phone,
-    mailingAddress: r.mailing_address, recordedAt: asInstant(r.created_at),
+    mailingAddress: r.mailing_address, createdBy: r.created_by, recordedAt: asInstant(r.created_at),
   })),
   'POST /api/login': (body) => ({ status: 200, body: login(body) }),
   'POST /api/payments': recordPayment,

@@ -1,0 +1,108 @@
+STUDENT LOAN PORTAL POC - SAMPLE QUESTIONS
+
+Tags: [B] is used for neutral, transactional phrasing and [C] for questions with emotional or situational context (hardship, worry, urgency). This is an assumption; adjust it if the tags mean something else.
+
+User types on the slide
+  Type 1 - Excellent standing (alice, grace): positive sentiment, rewards/refinance offers, upbeat theme.
+  Type 2 - Delinquency grade 1 (bob, henry): somewhat negative sentiment, autopay/budgeting help, encouraging theme.
+  Type 3 - Delinquency grade 2 (carol, irene): very negative sentiment, hardship assistance/debt counseling, supportive theme.
+
+======================================================================
+PART 1 - CORE QUESTIONS
+======================================================================
+ 1. [B] I'd like to know when my next payment is due and its amount
+ 2. [B] I'd like to know what's the balance of my loan and when's the maturity date?
+ 3. [B] I'd like to make an extra payment to my loan balance.
+ 4. [B] What's my current balance and payoff amount?
+ 5. [C] Can I lower my interest rate given my strong payment history?
+ 6. [C] In case a personal event will hinder on the ability to pay back my loan, what kind of help I can get?
+ 7. [C] I have some personal troubles now and need to know if I qualify for an assistance program?
+ 8. [B] I want to change my email address on contact file
+ 9. [C] How much extra should I pay off my loan in 12 months?
+10. [C] I may not be able to make a few payments for the time being as I lost my job
+11. [C] I might miss a payment this month - what are my options?
+12. [C] How do I set up autopay for my monthly payments
+13. [C] I just got my first child and I'd like to know if I qualify for an interest rate relief.
+14. [C] Due to unforeseen circumstances, I can't afford my payments right now. What repayment assistance is available to me?
+15. [C] I'm struggling to pay and may miss payments - what help is available?
+16. [B] I'd like to pay down my principal by an extra $150 this month.
+17. [C] What do you recommend to deal with hardship and inability to make payments?
+18. [B] I just moved and need to update my mailing address.
+
+======================================================================
+PART 2 - NEW QUESTIONS (ENRICHMENT)
+======================================================================
+
+--- A. Make a payment ---
+19. [B] I want to pay the full amount due on my loan today.
+20. [B] How do I make a one-time payment without setting up autopay?
+21. [B] I'd like to schedule my payment for the 15th of this month.
+22. [B] Can I use a different bank account for this payment?
+23. [B] Can I change the date my autopay is withdrawn each month?
+24. [B] Can you confirm my payment went through and give me a confirmation number?
+25. [B] I'd like to split this month's payment into two payments, one now and one at the end of the month.
+26. [C] I just got a bonus at work. I'd like to put $500 toward my principal, not toward future interest.
+27. [C] I'm a few days late. Can I pay now and avoid a late fee?
+28. [C] I can only afford part of my payment today. Can I pay a partial amount now and the rest next week?
+29. [C] My payment failed. How can I fix it and pay again?
+30. [C] I want to pay off my loan in full. What is the exact amount I need to send today?
+
+--- B. Update profile ---
+31. [B] I'd like to update my phone number on file.
+32. [B] I want to change my preferred contact method from mail to email.
+33. [B] I need to correct the spelling of my last name on my account.
+34. [B] I changed my name after getting married. How do I update it on my account?
+35. [B] How do I update the bank account used for autopay?
+36. [B] I'd like to switch to paperless statements.
+37. [B] I want to opt out of marketing emails.
+38. [B] I'd like to add someone I trust as an authorized contact on my account.
+39. [C] My phone number changed and I've been missing your calls. I want to update it right away.
+40. [C] I'm worried my account details were compromised. I need to update my email and password.
+41. [C] I changed jobs and my income dropped. I'd like to update my employment and income information so you can review my options.
+42. [C] I'm moving abroad. Can I update my address, and what happens to my payments?
+
+--- C. Review payment history ---
+43. [B] Show me my payments for the last 12 months.
+44. [B] When was my last payment received and how much was it?
+45. [B] How much interest have I paid so far in total?
+46. [B] Was my payment last month applied to principal or to interest?
+47. [B] When did my autopay last run?
+48. [B] I need a statement of the interest I paid last year for my taxes.
+49. [B] Did I miss any payments in the past year?
+50. [C] I think a payment is missing from my history. Can you check?
+51. [C] Why was I charged a late fee when I believe I paid on time?
+52. [C] I'm applying for a mortgage and need proof of my on-time payment record.
+53. [C] My balance didn't go down after my last payment. Can you explain how it was applied?
+54. [C] How many payments have I missed in the last six months, and does that affect my standing?
+
+--- D. Review borrower updates history ---
+(Changes made to the borrower's profile and requests: contact details, autopay settings, assistance requests.)
+55. [B] Show me the changes made to my profile in the last 90 days.
+56. [B] When did my mailing address last change on my account?
+57. [B] When did I last update my email address?
+58. [B] Can you show me the history of changes to my autopay settings?
+59. [B] Show me all the requests I have made and their status.
+60. [B] Was the last change to my contact details made by me or by someone else?
+61. [C] I didn't make this change to my address. Can you tell me when it was changed and by whom?
+62. [C] I'm worried someone accessed my account. Can I see all recent changes and sign-ins?
+63. [C] Did my request for payment assistance go through? When was my account last updated?
+64. [C] I've been getting mail at an old address. What address do you have on file and when did it last change?
+65. [C] Was my interest rate relief request recorded? What is its status?
+(Added when the history cards gained a "Recorded by" line: questions 60 and 61 ask who made a change.
+ The card now shows it, 'You' or 'Agent <id>'. The keyword model currently sends the wording of 60 and 61
+ to PROFILE_UPDATE rather than PROFILE_HISTORY; see change_manifest.md.)
+
+--- E. Review my program of study ---
+(The program the loan financed: name, code, field, credential, length, tuition, co-op. Reference data, same for every borrower in that program.)
+66. [B] Tell me about my program of study.
+67. [B] Which program of study is my loan for?
+68. [B] What am I studying?
+69. [B] How long is my program?
+70. [B] What is the tuition for my program per year?
+71. [B] What credential will I earn when I finish my program?
+72. [B] What is my program code?
+73. [B] Does my program include co-op work terms?
+74. [B] What field of study is my program in?
+75. [C] I'm about to graduate. Can you remind me what my program of study is and how long it runs?
+76. [C] I changed programs. Is the program of study on my loan still correct?
+77. [C] I'm worried the tuition on my account is wrong. Where can I see my program details?

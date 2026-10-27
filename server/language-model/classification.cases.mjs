@@ -14,6 +14,16 @@ export const CASES = [
   ['what is the amount due', 'NEXT_PAYMENT'],
   ['due date please', 'NEXT_PAYMENT'],
 
+  // -- program of study
+  ['Tell me about my program of study', 'PROGRAM_OF_STUDY'],
+  ['what am I studying', 'PROGRAM_OF_STUDY'],
+  ['show me the details of my program', 'PROGRAM_OF_STUDY'],
+  ['what is my field of study', 'PROGRAM_OF_STUDY'],
+  ['how long is my program', 'PROGRAM_OF_STUDY'],
+  ['what is the tuition for my program', 'PROGRAM_OF_STUDY'],
+  ['what is my program code', 'PROGRAM_OF_STUDY'],
+  ['what credential does my degree give me', 'PROGRAM_OF_STUDY'],
+
   // -- loan balance
   ["What's the balance of my loan and when's the maturity date?", 'LOAN_BALANCE'],
   ['how much do I still owe', 'LOAN_BALANCE'],

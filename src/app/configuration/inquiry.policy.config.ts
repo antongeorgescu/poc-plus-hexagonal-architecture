@@ -27,6 +27,9 @@ export const DETERMINISM_POLICY: Record<InquiryCategory, boolean> = {
   // Identical for every borrower by construction — same lists, same ordering.
   PAYMENT_HISTORY: true,
   PROFILE_HISTORY: true,
+  // The program catalogue entry the loan financed: reference data, the same for every
+  // borrower enrolled in it.
+  PROGRAM_OF_STUDY: true,
   HARDSHIP: false,
   LIFE_EVENT: false,
   // Scenario & qualifying-condition guidance: paying off faster, what the
@@ -46,6 +49,7 @@ export const CATEGORY_LABEL: Record<InquiryCategory, string> = {
   PROFILE_UPDATE: 'Update your profile',
   PAYMENT_HISTORY: 'Payment history',
   PROFILE_HISTORY: 'Profile update history',
+  PROGRAM_OF_STUDY: 'Program of study',
   HARDSHIP: 'Payment hardship',
   LIFE_EVENT: 'Life event & rate relief',
   REPAYMENT_OPTIONS: 'Repayment options & scenarios',
@@ -89,6 +93,11 @@ export const CATEGORY_DESCRIPTION: Record<InquiryCategory, string> = {
     'earlier email, phone or mailing-address updates and when they happened. ' +
     'The borrower wants to SEE past updates, not to make a new one ' +
     '(PROFILE_UPDATE).',
+  PROGRAM_OF_STUDY:
+    'Details of the program of study the loan financed — its name, code, field, ' +
+    'credential, length, tuition and whether it includes co-op terms. The borrower ' +
+    'wants to know WHAT they studied or are studying, not what they owe ' +
+    '(LOAN_BALANCE) and not job openings for it (HARDSHIP).',
   HARDSHIP:
     'The borrower is in financial distress or fears it: job loss, cannot afford ' +
     'the payments, expects to miss payments, or is asking what help exists. The ' +

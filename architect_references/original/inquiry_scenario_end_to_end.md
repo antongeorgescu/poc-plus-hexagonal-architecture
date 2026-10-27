@@ -40,7 +40,7 @@ it get overruled, and at what point is a figure allowed to become authoritative.
 ## 1. Preconditions — how the borrower got here
 
 The dashboard is unreachable without a session. `authGuard` runs first
-([auth.guard.ts:9-17](../src/app/configuration/auth.guard.ts#L9-L17)):
+([auth.guard.ts:9-17](../../src/app/configuration/auth.guard.ts#L9-L17)):
 
 ```ts
 export const authGuard: CanActivateFn = () => {
@@ -70,7 +70,7 @@ deterministic services are constructed with no dependencies at all.
 
 ## Step 0 — Bootstrap: recipes, not instances
 
-[main.ts:13-19](../src/main.ts#L13-L19)
+[main.ts:13-19](../../src/main.ts#L13-L19)
 
 ```ts
 bootstrapApplication(AppComponent, {
@@ -96,7 +96,7 @@ value using factory *F*, which itself needs keys *D₁…Dₙ*."
 
 The borrower navigates to `/dashboard`. Angular constructs `DashboardComponent`,
 whose field initialisers run **in declaration order**
-([dashboard.component.ts:84-87](../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L84-L87)):
+([dashboard.component.ts:84-87](../../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L84-L87)):
 
 ```ts
 private session         = inject(SessionStore);
@@ -140,7 +140,7 @@ inject(INQUIRY_PORT)
 ```
 
 The constructor that finally runs
-([inquiry.service.ts:117-121](../src/app/core/cognitive/inquiry.service.ts#L117-L121)):
+([inquiry.service.ts:117-121](../../src/app/core/cognitive/inquiry.service.ts#L117-L121)):
 
 ```ts
 export class InquiryService implements InquiryPort {
@@ -171,7 +171,7 @@ session."*
 ## Step 2 — The always-on cards resolve first
 
 `DashboardComponent`'s template renders two cards before the borrower does anything
-([dashboard.component.html:125-126](../src/app/adapters/driving/ui/dashboard/dashboard.component.html#L125-L126)):
+([dashboard.component.html:125-126](../../src/app/adapters/driving/ui/dashboard/dashboard.component.html#L125-L126)):
 
 ```html
 <app-account-summary [user]="u" />
@@ -208,7 +208,7 @@ each request is made **once per session**.
 ## Step 3 — The borrower asks
 
 The borrower types into the box and presses enter. `ask()` runs
-([dashboard.component.ts:123-131](../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L123-L131)):
+([dashboard.component.ts:123-131](../../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L123-L131)):
 
 ```ts
 async ask(): Promise<void> {
@@ -231,7 +231,7 @@ keyword model answers in a millisecond.
 ## Step 4 — The model proposes
 
 Inside `InquiryService.classify()`
-([inquiry.service.ts:123-140](../src/app/core/cognitive/inquiry.service.ts#L123-L140)):
+([inquiry.service.ts:123-140](../../src/app/core/cognitive/inquiry.service.ts#L123-L140)):
 
 ```ts
 const category =
@@ -274,7 +274,7 @@ keywords, not because its rule was listed first.)
 ## Step 5 — The core disposes
 
 Back in the core, the proposal is turned into a decision
-([inquiry.service.ts:135-139](../src/app/core/cognitive/inquiry.service.ts#L135-L139)):
+([inquiry.service.ts:135-139](../../src/app/core/cognitive/inquiry.service.ts#L135-L139)):
 
 ```ts
 return {
@@ -302,7 +302,7 @@ The dashboard receives:
 
 ## Step 6 — The dashboard places the card
 
-([dashboard.component.ts:142-159](../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L142-L159))
+([dashboard.component.ts:142-159](../../src/app/adapters/driving/ui/dashboard/dashboard.component.ts#L142-L159))
 
 ```ts
 const existing = this.entries().find((e) => e.result.category === result.category);
@@ -331,7 +331,7 @@ First ask on this topic, so: a new entry, prepended.
 
 ## Step 7 — The template selects the component
 
-([dashboard.component.html:86-116](../src/app/adapters/driving/ui/dashboard/dashboard.component.html#L86-L116))
+([dashboard.component.html:86-116](../../src/app/adapters/driving/ui/dashboard/dashboard.component.html#L86-L116))
 
 ```html
 @if (!entry.result.deterministic) { <app-ai-badge /> }   ← false here, so NO badge
@@ -352,7 +352,7 @@ marker is driven by the core's policy map, not by the model that did the classif
 ## Step 8 — The card resolves its own port
 
 `UpdateProfileComponent` is constructed
-([update-profile.component.ts:6-7, 156-158](../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L6-L7)):
+([update-profile.component.ts:6-7, 156-158](../../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L6-L7)):
 
 ```ts
 import { ProfilePort }  from '../../../../ports/driving/profile.port';   // the CONTRACT (type)
@@ -400,7 +400,7 @@ ngOnInit(): void { this.prefill(); }     // → this.profilePort.getContact(this
 ```
 
 `ProfileService.getContact` delegates to `currentContact()` in the domain
-([borrower.entity.ts:57-63](../src/app/core/domain/borrower.entity.ts#L57-L63)), which
+([borrower.entity.ts:57-63](../../src/app/core/domain/borrower.entity.ts#L57-L63)), which
 returns the contact details carried on the `User` (loaded from `borrower_contact` at login):
 
 ```ts
@@ -418,7 +418,7 @@ Step 11, not the component.
 ## Step 10 — Submit
 
 The borrower types a new address and submits
-([update-profile.component.ts:171-183](../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L171-L183)):
+([update-profile.component.ts:171-183](../../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L171-L183)):
 
 ```ts
 async submit(): Promise<void> {
@@ -442,7 +442,7 @@ async submit(): Promise<void> {
 ## Step 11 — The domain decides
 
 `ProfileService.updateProfile` → `applyProfileUpdate()`
-([borrower.entity.ts:70-102](../src/app/core/domain/borrower.entity.ts#L70-L102)):
+([borrower.entity.ts:70-102](../../src/app/core/domain/borrower.entity.ts#L70-L102)):
 
 ```ts
 const current = currentContact(user);
@@ -496,7 +496,7 @@ stored**, which becomes `updatedUser` on the result. If the write fails, the res
 ## Step 12 — Confirmation
 
 `result.set(res)` flips the template's `@if (!result()?.success)` branch
-([update-profile.component.ts:53-78](../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L53-L78)):
+([update-profile.component.ts:53-78](../../src/app/adapters/driving/ui/inquiry/update-profile.component.ts#L53-L78)):
 
 ```html
 <div class="confirm__check">✓</div>

@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../../core/domain/user.entity';
 import { PaymentApplyTo, PaymentHistory } from '../../../../core/domain/payment.entity';
+import { describeActor } from '../../../../core/domain/actor.utility';
 import { PaymentPort } from '../../../../ports/driving/payment.port';
 import { PAYMENT_PORT } from '../../../../configuration/tokens';
 
@@ -44,6 +45,7 @@ import { PAYMENT_PORT } from '../../../../configuration/tokens';
                 <th>Applied to</th>
                 <th>Paid from</th>
                 <th class="num">Balance after</th>
+                <th>Recorded by</th>
               </tr>
             </thead>
             <tbody>
@@ -55,6 +57,7 @@ import { PAYMENT_PORT } from '../../../../configuration/tokens';
                   <td>{{ appliedTo(p.applyTo) }}</td>
                   <td>{{ p.fundingSource }}</td>
                   <td class="num">{{ p.balanceAfter | currency }}</td>
+                  <td>{{ recordedBy(p.createdBy) }}</td>
                 </tr>
               }
             </tbody>
@@ -125,6 +128,11 @@ export class PaymentHistoryComponent implements OnChanges {
     if (id !== this.requestId) return;
     this.history.set(history);
     this.loading.set(false);
+  }
+
+  /** 'You' for the borrower's own entries, 'Agent <id>' for staff-assisted ones. */
+  recordedBy(createdBy: string): string {
+    return describeActor(createdBy, this.user.username);
   }
 
   appliedTo(applyTo: PaymentApplyTo): string {

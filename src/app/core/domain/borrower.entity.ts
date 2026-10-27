@@ -31,6 +31,8 @@ export interface ProfileContact {
 export interface ProfileUpdateEntry extends ProfileContact {
   id: number;
   referenceNumber: string;
+  /** Who created the record: 'user:<name>' (the borrower) or 'agent:<id>' (servicing staff). */
+  createdBy: string;
   recordedAt: string; // ISO instant
 }
 

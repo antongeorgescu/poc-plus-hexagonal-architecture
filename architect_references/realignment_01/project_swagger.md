@@ -4,14 +4,15 @@
 
 A Swagger page answers three questions about a service: *what components exist*,
 *what each one accepts and returns*, and *how they call each other*. This document
-answers those three questions for an application that has **no HTTP API at all**.
+answers those three questions for an application whose contract is **not an HTTP API**.
 
-There is no server here. But in Ports & Adapters the **port is the API** — a typed
+The only server is a small local data API ([`server/api.mjs`](../../server/api.mjs)) that
+sits behind the driven adapters; the core never sees it. In Ports & Adapters the **port is the API** — a typed
 interface the compiler enforces, which is a stricter contract than a URL. So every
 "endpoint" below is a port operation, every "server" is a binding key, and
 every "client" is an adapter.
 
-> **Related document.** [`../PORTS.md`](../PORTS.md) is the *interface* reference —
+> **Related document.** [`../PORTS.md`](../../PORTS.md) is the *interface* reference —
 > port signatures and payload schemas in isolation. **This** document is the
 > *component* reference: the parts, their dependencies, and the call sequences
 > between them. Read PORTS.md to implement against a port; read this to understand
@@ -79,7 +80,7 @@ flowchart TB
 
     ASVC -->|"<b>② narrateLoan(profile, loan) · narratePayments(payment)</b><br/>calls to DRIVEN ports with the ① results, already computed"| DVN
     COTHER -->|"classifyInquiry() · describeTone()<br/>composeWelcome() · getHistory()<br/>getJobsForProgram()"| DVN
-    BLL -->|"findByCredentials()<br/><i>AuthenticateService only</i>"| DVN
+    BLL -->|"findByCredentials() · record() · save() · history()<br/><i>Authenticate · Payment · Profile services</i>"| DVN
     DVN -->|"/api calls (users · payments · profile · jobs · chat)<br/>HTTPS to Azure"| DRIVEN
 
     CONFIG["configuration/ — composition root<br/><i>the only ring that names concrete classes</i>"]
@@ -91,18 +92,22 @@ flowchart TB
 
 **Reading the labels.** Arrows into the port ring carry the *port operation* being
 invoked; arrows out of it carry what the adapter then does. The `BLL` label is
-abridged to fit — 7 of its 10 driving operations; `suggestedAmount()`,
-`fundingSources()` and `getContact()` are omitted. Every other label is complete,
+abridged to fit — 7 of its 12 driving operations; `getHistory()`,
+`getUpdateHistory()`, `suggestedAmount()`, `fundingSources()` and `getContact()` are omitted. Every other label is complete,
 and the full set is tabulated in [§5](#5-tag-driving-ports--deterministic-bll)
 and [§6](#6-tag-driving-ports--cognitive-cll).
 
 Two arrows are worth a second look:
 
-- **`BLL → DVN` is a single operation.** Only `AuthenticateService` reaches a
-  driven port at all. `Payment`, `LoanInfo`, `Profile` and `Eligibility` take **no
-  constructor dependencies** ([providers.ts:93-96](../src/app/configuration/providers.ts#L93-L96))
-  — once the `User` is in hand, every authoritative figure is pure computation over
-  it. That is why the money math is trivially testable: no I/O to stub.
+- **`BLL → DVN` is three services, one repository port each.** `AuthenticateService`
+  (`findByCredentials()`), `PaymentService` (`record()`, `history()`) and `ProfileService`
+  (`save()`, `history()`) reach a driven port
+  ([providers.ts:104-119](../../src/app/configuration/providers.ts#L104-L119)). `LoanInfo` and
+  `Eligibility` take **no constructor dependencies**
+  ([providers.ts:114](../../src/app/configuration/providers.ts#L114),
+  [:120](../../src/app/configuration/providers.ts#L120)) — once the `User` is in hand, every
+  loan and eligibility figure is pure computation over it. That is why that money math is
+  trivially testable: no I/O to stub.
 - **`getJobsForProgram()` appears on both sides.** `InquiryPort` exposes it as a
   driving operation and `KnowledgeBasePort` requires it as a driven one;
   `InquiryService` is a pass-through that adds the borrower's program and location.
@@ -119,7 +124,7 @@ split is actually enforced.
 
 `narrateLoan()` does not reach a driving port. It is a **driven**-port operation —
 but its *arguments are what the driving ports returned*
-([account-summary.service.ts:33-41](../src/app/core/cognitive/account-summary.service.ts#L33-L41)):
+([account-summary.service.ts:33-41](../../src/app/core/cognitive/account-summary.service.ts#L33-L41)):
 
 ```ts
 // ① IN through the driving ports — authoritative values, computed by the BLL
@@ -171,11 +176,12 @@ cannot change whether that topic is deterministic, and it cannot choose the them
 is a pass-through to the knowledge base adding only program and location;
 `findByCredentials()` is a one-line delegation in `AuthenticateService`.
 
-**And the `DRV → BLL` arrow is a different category of thing entirely.** Its seven
-operations are not pipelines but thin delegations from an application service to a
+**And the `DRV → BLL` arrow is a different category of thing entirely.** Its operations
+are not pipelines but thin delegations from an application service to a
 pure domain function — `submit()` → `processPayment()`, `getLoanInfo()` →
-`buildLoanInfo()`. One hop, no second port. That is precisely why those four
-services are constructed with no dependencies at all.
+`buildLoanInfo()` — plus, in `PaymentService` and `ProfileService`, one repository call to
+persist or read the ledger. One hop to the domain, no second port in the figures. That is precisely
+why `LoanInfoService` and `EligibilityService` are constructed with no dependencies at all.
 
 **About that arrow.** The core makes plenty of outbound calls — every other arrow
 leaving the hexagon above is one. What makes this arrow singular is **where it
@@ -198,16 +204,16 @@ own application, which is why the arrow doubles back instead of continuing outwa
 Concretely, `AccountSummaryService` is the only component inside the hexagon that
 calls driving ports. It takes `ProfilePort`,
 `LoanInfoPort` and `PaymentPort` in its constructor
-([account-summary.service.ts:21-27](../src/app/core/cognitive/account-summary.service.ts#L21-L27))
+([account-summary.service.ts:21-27](../../src/app/core/cognitive/account-summary.service.ts#L21-L27))
 and invokes them at
-[lines 33-35](../src/app/core/cognitive/account-summary.service.ts#L33-L35).
+[lines 33-35](../../src/app/core/cognitive/account-summary.service.ts#L33-L35).
 The other three cognitive services import only the single driving port they
 *implement*, and otherwise depend on driven ports alone.
 
 That arrow is the architecture's load-bearing claim, so it is worth stating
 plainly: **the CLL has no privileged back channel into the BLL.** When the
 cognitive layer needs an authoritative figure it queues up at the same interface
-the UI uses — [providers.ts:9](../src/app/configuration/providers.ts#L9)
+the UI uses — [providers.ts:9](../../src/app/configuration/providers.ts#L9)
 puts it as *"they knock on the same doors the UI does."*
 
 > **Call direction ≠ dependency direction.** On the driven side they are
@@ -231,7 +237,7 @@ puts it as *"they knock on the same doors the UI does."*
 | **Driving port** (inbound, primary) | An operation the core **offers**. | The core | A driver — UI, the CLL, a test harness |
 | **Driven port** (outbound, secondary) | A capability the core **requires**. | An adapter | The core |
 | **Driving adapter** (primary) | Something that *makes the app do things*. | Angular components | A human |
-| **Driven adapter** (secondary) | Something the app *reaches out to*. | HTTP / memory | The core, via a driven port |
+| **Driven adapter** (secondary) | Something the app *reaches out to*. | HTTP (local API · Azure OpenAI) | The core, via a driven port |
 
 ### The two core regions
 
@@ -257,75 +263,79 @@ Each component below is documented with:
 
 ## 2. Component inventory
 
-Every row below is a real file in `src/` (row 44 groups the four shared-kernel
+Every row below is a real file in `src/` (row 44 groups the five shared-kernel
 types). Rings are listed outermost-first within each group.
 
 | # | Ring | Component | Path | Kind |
 |---|---|---|---|---|
-| 1 | Bootstrap | `bootstrapApplication` | [`src/main.ts`](../src/main.ts) | Entry point |
-| 2 | Driving adapter | `AppComponent` | [`app.component.ts`](../src/app/adapters/driving/ui/app.component.ts) | Root shell |
-| 3 | Driving adapter | `routes` | [`app.routes.ts`](../src/app/adapters/driving/ui/app.routes.ts) | Route table |
-| 4 | Driving adapter | `LoginComponent` | [`login.component.ts`](../src/app/adapters/driving/ui/login/login.component.ts) | Screen |
-| 5 | Driving adapter | `DashboardComponent` | [`dashboard.component.ts`](../src/app/adapters/driving/ui/dashboard/dashboard.component.ts) | Screen / orchestrator |
-| 6 | Driving adapter | `NextPaymentComponent` | [`next-payment.component.ts`](../src/app/adapters/driving/ui/inquiry/next-payment.component.ts) | Answer card |
-| 7 | Driving adapter | `LoanBalanceComponent` | [`loan-balance.component.ts`](../src/app/adapters/driving/ui/inquiry/loan-balance.component.ts) | Answer card |
-| 8 | Driving adapter | `MakePaymentComponent` | [`make-payment.component.ts`](../src/app/adapters/driving/ui/inquiry/make-payment.component.ts) | Answer card (write) |
-| 9a | Driving adapter | `PaymentHistoryComponent` | [`payment-history.component.ts`](../src/app/adapters/driving/ui/inquiry/payment-history.component.ts) | Answer card (read) |
-| 9b | Driving adapter | `ProfileHistoryComponent` | [`profile-history.component.ts`](../src/app/adapters/driving/ui/inquiry/profile-history.component.ts) | Answer card (read) |
-| 9 | Driving adapter | `UpdateProfileComponent` | [`update-profile.component.ts`](../src/app/adapters/driving/ui/inquiry/update-profile.component.ts) | Answer card (write) |
-| 10 | Driving adapter | `JobOpportunitiesComponent` | [`job-opportunities.component.ts`](../src/app/adapters/driving/ui/inquiry/job-opportunities.component.ts) | Answer card |
-| 11 | Driving adapter | `InterestReliefComponent` | [`interest-relief.component.ts`](../src/app/adapters/driving/ui/inquiry/interest-relief.component.ts) | Answer card |
-| 12 | Driving adapter | `RepaymentOptionsComponent` | [`repayment-options.component.ts`](../src/app/adapters/driving/ui/inquiry/repayment-options.component.ts) | Answer card |
-| 13 | Driving adapter | `GeneralHelpComponent` | [`general-help.component.ts`](../src/app/adapters/driving/ui/inquiry/general-help.component.ts) | Answer card (fallback) |
-| 14 | Driving adapter | `AccountSummaryComponent` | [`account-summary.component.ts`](../src/app/adapters/driving/ui/summary/account-summary.component.ts) | Always-on card |
-| 15 | Driving adapter | `ChatInsightsComponent` | [`chat-insights.component.ts`](../src/app/adapters/driving/ui/summary/chat-insights.component.ts) | Always-on card |
-| 16 | Driving adapter | `AiBadgeComponent` | [`ai-badge.component.ts`](../src/app/adapters/driving/ui/shared/ai-badge.component.ts) | Presentational marker |
-| 17 | Driving port | `AuthenticatePort` | [`authenticate.port.ts`](../src/app/ports/driving/authenticate.port.ts) | BLL interface |
-| 18 | Driving port | `LoanInfoPort` | [`loan-info.port.ts`](../src/app/ports/driving/loan-info.port.ts) | BLL interface |
-| 19 | Driving port | `PaymentPort` | [`payment.port.ts`](../src/app/ports/driving/payment.port.ts) | BLL interface |
-| 20 | Driving port | `ProfilePort` | [`profile.port.ts`](../src/app/ports/driving/profile.port.ts) | BLL interface |
-| 21 | Driving port | `EligibilityPort` | [`eligibility.port.ts`](../src/app/ports/driving/eligibility.port.ts) | BLL interface |
-| 22 | Driving port | `InquiryPort` | [`inquiry.port.ts`](../src/app/ports/driving/inquiry.port.ts) | **CLL** interface |
-| 23 | Driving port | `AccountSummaryPort` | [`account-summary.port.ts`](../src/app/ports/driving/account-summary.port.ts) | **CLL** interface |
-| 24 | Driving port | `ChatInsightsPort` | [`chat-insights.port.ts`](../src/app/ports/driving/chat-insights.port.ts) | **CLL** interface |
-| 25 | Driving port | `PersonalizationPort` | [`personalization.port.ts`](../src/app/ports/driving/personalization.port.ts) | **CLL** interface |
-| 26 | Driven port | `UserRepositoryPort` · `PaymentRepositoryPort` · `ProfileRepositoryPort` | [`user-repository.port.ts`](../src/app/ports/driven/user-repository.port.ts) · [`payment-repository.port.ts`](../src/app/ports/driven/payment-repository.port.ts) · [`profile-repository.port.ts`](../src/app/ports/driven/profile-repository.port.ts) | Required capabilities |
-| 27 | Driven port | `LanguageModelPort` | [`language-model.port.ts`](../src/app/ports/driven/language-model.port.ts) | Required capability |
-| 28 | Driven port | `KnowledgeBasePort` | [`knowledge-base.port.ts`](../src/app/ports/driven/knowledge-base.port.ts) | Required capability |
-| 29 | Driven port | `ChatHistoryPort` | [`chat-history.port.ts`](../src/app/ports/driven/chat-history.port.ts) | Required capability |
-| 30 | Core · BLL | `AuthenticateService` | [`authenticate.service.ts`](../src/app/core/application/authenticate.service.ts) | Use case |
-| 31 | Core · BLL | `LoanInfoService` | [`loan-info.service.ts`](../src/app/core/application/loan-info.service.ts) | Use case |
-| 32 | Core · BLL | `PaymentService` | [`payment.service.ts`](../src/app/core/application/payment.service.ts) | Use case |
-| 33 | Core · BLL | `ProfileService` | [`profile.service.ts`](../src/app/core/application/profile.service.ts) | Use case |
-| 34 | Core · BLL | `EligibilityService` | [`eligibility.service.ts`](../src/app/core/application/eligibility.service.ts) | Use case |
-| 35 | Core · CLL | `InquiryService` | [`inquiry.service.ts`](../src/app/core/cognitive/inquiry.service.ts) | Policy + classification |
-| 36 | Core · CLL | `AccountSummaryService` | [`account-summary.service.ts`](../src/app/core/cognitive/account-summary.service.ts) | Aggregation + narration |
-| 37 | Core · CLL | `ChatInsightsService` | [`chat-insights.service.ts`](../src/app/core/cognitive/chat-insights.service.ts) | Interpretation |
-| 38 | Core · CLL | `PersonalizationService` | [`personalization.service.ts`](../src/app/core/cognitive/personalization.service.ts) | Tone + theme |
-| 39 | Core · Domain | `user.entity.ts` | [`user.entity.ts`](../src/app/core/domain/user.entity.ts) | Entity |
-| 40 | Core · Domain | `loan.entity.ts` | [`loan.entity.ts`](../src/app/core/domain/loan.entity.ts) | Entity + money math |
-| 41 | Core · Domain | `payment.entity.ts` | [`payment.entity.ts`](../src/app/core/domain/payment.entity.ts) | Entity + money math |
-| 42 | Core · Domain | `borrower.entity.ts` | [`borrower.entity.ts`](../src/app/core/domain/borrower.entity.ts) | Entity + validation |
-| 43 | Core · Domain | `eligibility.entity.ts` | [`eligibility.entity.ts`](../src/app/core/domain/eligibility.entity.ts) | Decision rules |
-| 44 | Core · Domain | `inquiry.type.ts` · `sentiment.type.ts` · `job-posting.type.ts` · `date.utility.ts` | [`core/domain/`](../src/app/core/domain/) | Shared kernel |
-| 45 | Driven adapter | `ApiUserRepository` · `ApiPaymentRepository` · `ApiProfileRepository` | [`api-user.repository.ts`](../src/app/adapters/driven/api-user.repository.ts) · [`api-payment.repository.ts`](../src/app/adapters/driven/api-payment.repository.ts) · [`api-profile.repository.ts`](../src/app/adapters/driven/api-profile.repository.ts) | System of record (via the local API) |
-| 46 | Driven adapter | `ApiLanguageModel` | [`api-language-model.ts`](../src/app/adapters/driven/api-language-model.ts) | Client of the server keyword model |
-| 47 | Driven adapter | `AzureAiLanguageModel` | [`azure-ai-language-model.ts`](../src/app/adapters/driven/azure-ai-language-model.ts) | Live model runtime |
-| 48 | Driven adapter | `ApiKnowledgeBase` | [`api-knowledge-base.ts`](../src/app/adapters/driven/api-knowledge-base.ts) | Grounding source |
-| 49 | Driven adapter | `ApiChatHistory` | [`api-chat-history.ts`](../src/app/adapters/driven/api-chat-history.ts) | Grounding source |
-| 50 | Configuration | `tokens.ts` | [`tokens.ts`](../src/app/configuration/tokens.ts) | 15 binding keys |
-| 51 | Configuration | `providers.ts` | [`providers.ts`](../src/app/configuration/providers.ts) | Composition root |
-| 52 | Configuration | `ai.config.ts` | [`ai.config.ts`](../src/app/configuration/ai.config.ts) | Model-runtime selection |
-| 53 | Configuration | `session.store.ts` | [`session.store.ts`](../src/app/configuration/session.store.ts) | Signal-based session |
-| 54 | Configuration | `auth.guard.ts` | [`auth.guard.ts`](../src/app/configuration/auth.guard.ts) | Route guard |
+| 1 | Bootstrap | `bootstrapApplication` | [`src/main.ts`](../../src/main.ts) | Entry point |
+| 2 | Driving adapter | `AppComponent` | [`app.component.ts`](../../src/app/adapters/driving/ui/app.component.ts) | Root shell |
+| 3 | Driving adapter | `routes` | [`app.routes.ts`](../../src/app/adapters/driving/ui/app.routes.ts) | Route table |
+| 4 | Driving adapter | `LoginComponent` | [`login.component.ts`](../../src/app/adapters/driving/ui/login/login.component.ts) | Screen |
+| 5 | Driving adapter | `DashboardComponent` | [`dashboard.component.ts`](../../src/app/adapters/driving/ui/dashboard/dashboard.component.ts) | Screen / orchestrator |
+| 5a | Driving adapter | `DeterminismPolicyComponent` | [`determinism-policy.component.ts`](../../src/app/adapters/driving/ui/policy/determinism-policy.component.ts) | Screen (read-only business setting) |
+| 6 | Driving adapter | `NextPaymentComponent` | [`next-payment.component.ts`](../../src/app/adapters/driving/ui/inquiry/next-payment.component.ts) | Answer card |
+| 7 | Driving adapter | `LoanBalanceComponent` | [`loan-balance.component.ts`](../../src/app/adapters/driving/ui/inquiry/loan-balance.component.ts) | Answer card |
+| 8 | Driving adapter | `MakePaymentComponent` | [`make-payment.component.ts`](../../src/app/adapters/driving/ui/inquiry/make-payment.component.ts) | Answer card (write) |
+| 9a | Driving adapter | `PaymentHistoryComponent` | [`payment-history.component.ts`](../../src/app/adapters/driving/ui/inquiry/payment-history.component.ts) | Answer card (read) |
+| 9b | Driving adapter | `ProfileHistoryComponent` | [`profile-history.component.ts`](../../src/app/adapters/driving/ui/inquiry/profile-history.component.ts) | Answer card (read) |
+| 9c | Driving adapter | `ProgramOfStudyComponent` | [`program-of-study.component.ts`](../../src/app/adapters/driving/ui/inquiry/program-of-study.component.ts) | Answer card (read) |
+| 9 | Driving adapter | `UpdateProfileComponent` | [`update-profile.component.ts`](../../src/app/adapters/driving/ui/inquiry/update-profile.component.ts) | Answer card (write) |
+| 10 | Driving adapter | `JobOpportunitiesComponent` | [`job-opportunities.component.ts`](../../src/app/adapters/driving/ui/inquiry/job-opportunities.component.ts) | Answer card |
+| 11 | Driving adapter | `InterestReliefComponent` | [`interest-relief.component.ts`](../../src/app/adapters/driving/ui/inquiry/interest-relief.component.ts) | Answer card |
+| 12 | Driving adapter | `RepaymentOptionsComponent` | [`repayment-options.component.ts`](../../src/app/adapters/driving/ui/inquiry/repayment-options.component.ts) | Answer card |
+| 13 | Driving adapter | `GeneralHelpComponent` | [`general-help.component.ts`](../../src/app/adapters/driving/ui/inquiry/general-help.component.ts) | Answer card (fallback) |
+| 14 | Driving adapter | `AccountSummaryComponent` | [`account-summary.component.ts`](../../src/app/adapters/driving/ui/summary/account-summary.component.ts) | Always-on card |
+| 15 | Driving adapter | `ChatInsightsComponent` | [`chat-insights.component.ts`](../../src/app/adapters/driving/ui/summary/chat-insights.component.ts) | Always-on card |
+| 16 | Driving adapter | `AiBadgeComponent` | [`ai-badge.component.ts`](../../src/app/adapters/driving/ui/shared/ai-badge.component.ts) | Presentational marker |
+| 17 | Driving port | `AuthenticatePort` | [`authenticate.port.ts`](../../src/app/ports/driving/authenticate.port.ts) | BLL interface |
+| 18 | Driving port | `LoanInfoPort` | [`loan-info.port.ts`](../../src/app/ports/driving/loan-info.port.ts) | BLL interface |
+| 19 | Driving port | `PaymentPort` | [`payment.port.ts`](../../src/app/ports/driving/payment.port.ts) | BLL interface |
+| 20 | Driving port | `ProfilePort` | [`profile.port.ts`](../../src/app/ports/driving/profile.port.ts) | BLL interface |
+| 21 | Driving port | `EligibilityPort` | [`eligibility.port.ts`](../../src/app/ports/driving/eligibility.port.ts) | BLL interface |
+| 22 | Driving port | `InquiryPort` | [`inquiry.port.ts`](../../src/app/ports/driving/inquiry.port.ts) | **CLL** interface |
+| 23 | Driving port | `AccountSummaryPort` | [`account-summary.port.ts`](../../src/app/ports/driving/account-summary.port.ts) | **CLL** interface |
+| 24 | Driving port | `ChatInsightsPort` | [`chat-insights.port.ts`](../../src/app/ports/driving/chat-insights.port.ts) | **CLL** interface |
+| 25 | Driving port | `PersonalizationPort` | [`personalization.port.ts`](../../src/app/ports/driving/personalization.port.ts) | **CLL** interface |
+| 26 | Driven port | `UserRepositoryPort` · `PaymentRepositoryPort` · `ProfileRepositoryPort` | [`user-repository.port.ts`](../../src/app/ports/driven/user-repository.port.ts) · [`payment-repository.port.ts`](../../src/app/ports/driven/payment-repository.port.ts) · [`profile-repository.port.ts`](../../src/app/ports/driven/profile-repository.port.ts) | Required capabilities |
+| 27 | Driven port | `LanguageModelPort` | [`language-model.port.ts`](../../src/app/ports/driven/language-model.port.ts) | Required capability |
+| 28 | Driven port | `KnowledgeBasePort` | [`knowledge-base.port.ts`](../../src/app/ports/driven/knowledge-base.port.ts) | Required capability |
+| 29 | Driven port | `ChatHistoryPort` | [`chat-history.port.ts`](../../src/app/ports/driven/chat-history.port.ts) | Required capability |
+| 30 | Core · BLL | `AuthenticateService` | [`authenticate.service.ts`](../../src/app/core/application/authenticate.service.ts) | Use case |
+| 31 | Core · BLL | `LoanInfoService` | [`loan-info.service.ts`](../../src/app/core/application/loan-info.service.ts) | Use case |
+| 32 | Core · BLL | `PaymentService` | [`payment.service.ts`](../../src/app/core/application/payment.service.ts) | Use case |
+| 33 | Core · BLL | `ProfileService` | [`profile.service.ts`](../../src/app/core/application/profile.service.ts) | Use case |
+| 34 | Core · BLL | `EligibilityService` | [`eligibility.service.ts`](../../src/app/core/application/eligibility.service.ts) | Use case |
+| 35 | Core · CLL | `InquiryService` | [`inquiry.service.ts`](../../src/app/core/cognitive/inquiry.service.ts) | Policy + classification |
+| 36 | Core · CLL | `AccountSummaryService` | [`account-summary.service.ts`](../../src/app/core/cognitive/account-summary.service.ts) | Aggregation + narration |
+| 37 | Core · CLL | `ChatInsightsService` | [`chat-insights.service.ts`](../../src/app/core/cognitive/chat-insights.service.ts) | Interpretation |
+| 38 | Core · CLL | `PersonalizationService` | [`personalization.service.ts`](../../src/app/core/cognitive/personalization.service.ts) | Tone + theme |
+| 38a | Core · CLL | `InquiryPolicy` | [`inquiry.policy.ts`](../../src/app/core/cognitive/inquiry.policy.ts) | Policy contract (the shape of the three maps) |
+| 39 | Core · Domain | `user.entity.ts` | [`user.entity.ts`](../../src/app/core/domain/user.entity.ts) | Entity |
+| 40 | Core · Domain | `loan.entity.ts` | [`loan.entity.ts`](../../src/app/core/domain/loan.entity.ts) | Entity + money math |
+| 41 | Core · Domain | `payment.entity.ts` | [`payment.entity.ts`](../../src/app/core/domain/payment.entity.ts) | Entity + money math |
+| 42 | Core · Domain | `borrower.entity.ts` | [`borrower.entity.ts`](../../src/app/core/domain/borrower.entity.ts) | Entity + validation |
+| 43 | Core · Domain | `eligibility.entity.ts` | [`eligibility.entity.ts`](../../src/app/core/domain/eligibility.entity.ts) | Decision rules |
+| 44 | Core · Domain | `inquiry.type.ts` · `sentiment.type.ts` · `job-posting.type.ts` · `date.utility.ts` · `actor.utility.ts` | [`core/domain/`](../../src/app/core/domain/) | Shared kernel |
+| 45 | Driven adapter | `ApiUserRepository` · `ApiPaymentRepository` · `ApiProfileRepository` | [`api-user.repository.ts`](../../src/app/adapters/driven/api-user.repository.ts) · [`api-payment.repository.ts`](../../src/app/adapters/driven/api-payment.repository.ts) · [`api-profile.repository.ts`](../../src/app/adapters/driven/api-profile.repository.ts) | System of record (via the local API) |
+| 46 | Driven adapter | `ApiLanguageModel` | [`api-language-model.ts`](../../src/app/adapters/driven/api-language-model.ts) | Client of the server keyword model |
+| 47 | Driven adapter | `AzureAiLanguageModel` | [`azure-ai-language-model.ts`](../../src/app/adapters/driven/azure-ai-language-model.ts) | Live model runtime |
+| 48 | Driven adapter | `ApiKnowledgeBase` | [`api-knowledge-base.ts`](../../src/app/adapters/driven/api-knowledge-base.ts) | Grounding source |
+| 49 | Driven adapter | `ApiChatHistory` | [`api-chat-history.ts`](../../src/app/adapters/driven/api-chat-history.ts) | Grounding source |
+| 50 | Configuration | `tokens.ts` | [`tokens.ts`](../../src/app/configuration/tokens.ts) | 16 binding keys |
+| 50a | Configuration | `inquiry.policy.config.ts` | [`inquiry.policy.config.ts`](../../src/app/configuration/inquiry.policy.config.ts) | Business settings (determinism, label, description maps) |
+| 51 | Configuration | `providers.ts` | [`providers.ts`](../../src/app/configuration/providers.ts) | Composition root |
+| 52 | Configuration | `ai.config.ts` | [`ai.config.ts`](../../src/app/configuration/ai.config.ts) | Model-runtime selection |
+| 53 | Configuration | `session.store.ts` | [`session.store.ts`](../../src/app/configuration/session.store.ts) | Signal-based session |
+| 54 | Configuration | `auth.guard.ts` | [`auth.guard.ts`](../../src/app/configuration/auth.guard.ts) | Route guard |
 
-**Data assets.** Five of the six driven adapters are backed by data rather than by code,
+**Data assets.** Five of the seven driven adapters are backed by data rather than by code,
 and all of that data lives in **one SQLite file**, reached only through the local API in
-[`server/api.mjs`](../server/api.mjs) — so the data set can change without recompiling:
+[`server/api.mjs`](../../server/api.mjs) — so the data set can change without recompiling:
 
 | Asset | Read by | Shape |
 |---|---|---|
-| [`loanservicing.db`](../db/data/loanservicing.db) (SQLite, built by [`db/build.mjs`](../db/build.mjs) from [`db/schema.sql`](../db/schema.sql) and [`db/seed-data.mjs`](../db/seed-data.mjs), opened only by the API) | `ApiUserRepository` · `ApiPaymentRepository` · `ApiProfileRepository` · `ApiKnowledgeBase` · `ApiChatHistory` | 6 borrowers across `borrower`, `borrower_contact`, `loan`, `payment` (current schedule), `user_authentication`; the `payment_history` and `profile_update_history` ledgers; the `job_posting` catalog (20 postings, a `General` fallback set) and `chat_history` (one row per borrower: counts, recap prose, raw `toneScore`) |
+| [`loanservicing.db`](../../db/data/loanservicing.db) (SQLite, built by [`db/build.mjs`](../../db/build.mjs) from [`db/schema.sql`](../../db/schema.sql) and [`db/seed-data.mjs`](../../db/seed-data.mjs), opened only by the API) | `ApiUserRepository` · `ApiPaymentRepository` · `ApiProfileRepository` · `ApiKnowledgeBase` · `ApiChatHistory` | 6 borrowers across `borrower`, `borrower_contact`, `loan`, `payment` (current schedule), `user_authentication`; the `program_of_study` catalogue (6 programs, referenced by `loan.program_id`); the `payment_history` and `profile_update_history` ledgers (each row carries `created_by`: `user:<name>` or `agent:<id>`); the `job_posting` catalog (20 postings, a `General` fallback set) and `chat_history` (one row per borrower: counts, recap prose, raw `toneScore`) |
 
 None of it is named anywhere inside `core/` or `ports/` — only the adapters know the API
 paths, and only the API knows the table names.
@@ -339,13 +349,13 @@ behind `LanguageModelPort`. Selecting it is the OpenAPI equivalent of choosing a
 server URL — and, exactly like a server block, no application code changes when
 you switch.
 
-Declared in [`ai.config.ts`](../src/app/configuration/ai.config.ts); resolved once
+Declared in [`ai.config.ts`](../../src/app/configuration/ai.config.ts); resolved once
 per session and cached.
 
 | Mode | Adapter bound | Endpoint | Credential location | Use when |
 |---|---|---|---|---|
 | `mock` **(default)** | `ApiLanguageModel` | `/api/language-model/*` (local API) | none | Demos, tests, offline. No LLM, no Azure, no key. |
-| `proxy` | `AzureAiLanguageModel` | `/api/azure-ai` (same-origin) | **Dev server**, injected by [`proxy.conf.js`](../proxy.conf.js) | The supported way to run against real Azure OpenAI. |
+| `proxy` | `AzureAiLanguageModel` | `/api/azure-ai` (same-origin) | **Dev server**, injected by [`proxy.conf.js`](../../proxy.conf.js) | The supported way to run against real Azure OpenAI. |
 | `directKey` | `AzureAiLanguageModel` | `https://<resource>.openai.azure.com` | **The browser bundle** — exposed | Throwaway local spikes only. Warns loudly. |
 
 **Resolution order** (later wins): built-in defaults → `window.__AI_CONFIG__` →
@@ -363,6 +373,13 @@ to `AzureAiLanguageModel` as a fallback. Any transport error, timeout, bad statu
 or unparseable payload silently delegates to it. **A missing key degrades the
 prose; it never breaks the app, and it never affects a number.**
 
+**The data API.** Everything else the browser calls under `/api` is served by
+[`server/api.mjs`](../../server/api.mjs) (`npm run api`, Node 22+, `127.0.0.1:3000` or `API_PORT`),
+which alone opens the SQLite file (`db/data/loanservicing.db`, or `DB_FILE`). `proxy.conf.js`
+forwards `/api` to it, after the more specific `/api/azure-ai` rule. It serves 11 routes: `POST /api/login`,
+`/api/payments`, `/api/profile` and `/api/language-model/{classify,narrate-loan,narrate-payments,describe-tone,compose-welcome}`,
+and `GET /api/jobs`, `/api/chat-history`, `/api/payments/history`, `/api/profile/history`.
+
 > **Why the query string is captured at module load.** `resolveAiConfig()` runs
 > inside an Angular `useFactory`, which Angular evaluates lazily — on first
 > injection of `LANGUAGE_MODEL_PORT`, i.e. on the dashboard. By then the router
@@ -378,7 +395,7 @@ Primary adapters. They **initiate**; they never compute. Each resolves ports by
 
 ### 4.1 Route table
 
-[`app.routes.ts`](../src/app/adapters/driving/ui/app.routes.ts) — the closest thing
+[`app.routes.ts`](../../src/app/adapters/driving/ui/app.routes.ts) — the closest thing
 this app has to a URL surface.
 
 | Path | Component | Guard | Loading | Description |
@@ -386,11 +403,12 @@ this app has to a URL surface.
 | `''` | — | — | — | Redirects to `/login` (`pathMatch: 'full'`). |
 | `/login` | `LoginComponent` | none | lazy | Credential entry. The only route reachable without a session. |
 | `/dashboard` | `DashboardComponent` | `authGuard` | lazy | The whole application. Redirects to `/login` when unauthenticated. |
+| `/configuration` | `DeterminismPolicyComponent` | none | lazy | Read-only view of the determinism policy (a business setting). Linked from the sign-in page; shows no borrower data. |
 | `**` | — | — | — | Any unknown path redirects to `/login`. |
 
 ### 4.2 `AppComponent`
 
-**Path** [`ui/app.component.ts`](../src/app/adapters/driving/ui/app.component.ts) ·
+**Path** [`ui/app.component.ts`](../../src/app/adapters/driving/ui/app.component.ts) ·
 **Selector** `app-root`
 
 The root shell. Its entire template is `<router-outlet />`. It holds no state and
@@ -398,7 +416,7 @@ injects no port — deliberately, so the shell carries no business meaning.
 
 ### 4.3 `LoginComponent`
 
-**Path** [`ui/login/login.component.ts`](../src/app/adapters/driving/ui/login/login.component.ts) ·
+**Path** [`ui/login/login.component.ts`](../../src/app/adapters/driving/ui/login/login.component.ts) ·
 **Selector** `app-login`
 
 Drives the core through `AuthenticatePort` and, on success, records the borrower
@@ -422,7 +440,7 @@ business rule.
 
 ### 4.4 `DashboardComponent`
 
-**Path** [`ui/dashboard/dashboard.component.ts`](../src/app/adapters/driving/ui/dashboard/dashboard.component.ts) ·
+**Path** [`ui/dashboard/dashboard.component.ts`](../../src/app/adapters/driving/ui/dashboard/dashboard.component.ts) ·
 **Selector** `app-dashboard`
 
 The orchestrator, and the most interesting component in the system. It takes free
@@ -476,6 +494,7 @@ answer component that topic maps to.
 | `PROFILE_UPDATE` | `<app-update-profile>` | ✅ | no |
 | `PAYMENT_HISTORY` | `<app-payment-history>` | ✅ | no |
 | `PROFILE_HISTORY` | `<app-profile-history>` | ✅ | no |
+| `PROGRAM_OF_STUDY` | `<app-program-of-study>` | ✅ | no |
 | `HARDSHIP` | `<app-job-opportunities>` | ❌ | yes |
 | `LIFE_EVENT` | `<app-interest-relief>` | ❌ | yes |
 | `REPAYMENT_OPTIONS` | `<app-repayment-options>` | ❌ | yes |
@@ -487,19 +506,21 @@ not model-controlled.**
 
 ### 4.5 Answer components
 
-All ten share one contract: **`@Input({ required: true }) user!: User`**, and
-each fetches its own figures through a driving port in `ngOnInit` (the two history
+All eleven share one contract: **`@Input({ required: true }) user!: User`**, and
+each (except `GeneralHelpComponent` and `ProgramOfStudyComponent`, which inject no port)
+fetches its own figures through a driving port in `ngOnInit` (the two history
 components use `ngOnChanges` instead, so a new `user` — e.g. after a payment — reloads them). None receives
 data from the dashboard beyond the user, and none computes a figure.
 
 | Component | Selector | Ports injected | What it renders | Writes? |
 |---|---|---|---|---|
-| `NextPaymentComponent` | `app-next-payment` | `PAYMENT_PORT` | Due amount, due date, arrears flag, on-time streak. | no |
-| `LoanBalanceComponent` | `app-loan-balance` | `LOAN_INFO_PORT` | Balance, original amount, rate, % repaid, months to maturity. | no |
+| `NextPaymentComponent` | `app-next-payment` | `PAYMENT_PORT` | Amount due, due date, regular monthly payment, payments made, and a past-due note when the amount includes arrears. | no |
+| `LoanBalanceComponent` | `app-loan-balance` | `LOAN_INFO_PORT` | Balance, original amount, rate, maturity date, % repaid, and the program of study (name, with credential level and program code). | no |
 | `MakePaymentComponent` | `app-make-payment` | `PAYMENT_PORT` | Payment form pre-filled from `suggestedAmount()`, funding-source list, confirmation with reference number. | **yes** — `submit()` |
 | `UpdateProfileComponent` | `app-update-profile` | `PROFILE_PORT` | Contact form pre-filled from `getContact()`, validation messages, confirmation reference. | **yes** — `updateProfile()` |
-| `PaymentHistoryComponent` | `app-payment-history` | `PAYMENT_PORT` | The payments made, **newest first**: date, reference, amount, applied to, funding source, balance after, plus the count and total. Loading, empty and error states. Reloads when the session user changes. | no |
-| `ProfileHistoryComponent` | `app-profile-history` | `PROFILE_PORT` | The contact updates made, **newest first**, each with its reference and a **Changed** tag on the fields it altered. Reloads when the session user changes. | no |
+| `PaymentHistoryComponent` | `app-payment-history` | `PAYMENT_PORT` | The payments made, **newest first**: date, reference, amount, applied to, funding source, balance after, **recorded by** (`You` or `Agent <id>`, from `createdBy`), plus the count and total. Loading, empty and error states. Reloads when the session user changes. | no |
+| `ProfileHistoryComponent` | `app-profile-history` | `PROFILE_PORT` | The contact updates made, **newest first**, each with its reference, who recorded it (`You` or `Agent <id>`) and a **Changed** tag on the fields it altered. Reloads when the session user changes. | no |
+| `ProgramOfStudyComponent` | `app-program-of-study` | *none* | The program the loan financed, from `user.program`: name, description, code, field of study, credential, length, annual tuition, co-op. Falls back to `user.programOfStudy` with a note for a session saved before programs existed. | no |
 | `JobOpportunitiesComponent` | `app-job-opportunities` | `INQUIRY_PORT` | Job postings matched to program of study, ordered nearest-first by location. Grounding, not advice. Resolves a `Promise` — the catalog is a stored data set. | no |
 | `InterestReliefComponent` | `app-interest-relief` | `ELIGIBILITY_PORT` | The rate-relief **verdict**, proposed rate, estimated monthly saving, and `reason` printed verbatim. | no |
 | `RepaymentOptionsComponent` | `app-repayment-options` | `LOAN_INFO_PORT`, `PAYMENT_PORT`, `PROFILE_PORT`, `ELIGIBILITY_PORT` | Payoff scenarios and qualifying conditions. Cognitive framing, **four deterministic sources**. | no |
@@ -522,7 +543,7 @@ Rendered on every dashboard load, outside the answer history.
 
 ### 4.7 `AiBadgeComponent`
 
-**Path** [`ui/shared/ai-badge.component.ts`](../src/app/adapters/driving/ui/shared/ai-badge.component.ts) ·
+**Path** [`ui/shared/ai-badge.component.ts`](../../src/app/adapters/driving/ui/shared/ai-badge.component.ts) ·
 **Selector** `app-ai-badge`
 
 Purely presentational; injects nothing.
@@ -721,7 +742,7 @@ UI uses**. There is no privileged internal path.
 
 | Operation | Parameters | Returns | Description |
 |---|---|---|---|
-| `getWelcome` | `user: User` | `Promise<`[`WelcomeContent`](#welcomecontent)`>` | Greeting, invitation and three suggested prompts from the model, **plus** two fixed record look-up questions the core appends (payment history, profile update history), **plus** `themeClass`. |
+| `getWelcome` | `user: User` | `Promise<`[`WelcomeContent`](#welcomecontent)`>` | Greeting, invitation and three suggested prompts from the model, **plus** three fixed record look-up questions the core appends (payment history, profile update history, program of study), **plus** `themeClass`. |
 
 The split inside a four-line method is the whole lesson: the copy is model output;
 `themeClass: \`theme-${user.userType}\`` is business policy and stays in the core.
@@ -858,8 +879,10 @@ Outer ring. The core never imports these; only `providers.ts` names them.
 ### 8.1 `ApiUserRepository` → `UserRepositoryPort`
 
 Posts the credentials to `/api/login`. The local API (`server/api.mjs`) owns the SQLite
-file: it checks the password against `user_authentication`, joins `borrower`, `loan` and
-`payment` into a `User`, and returns it **without** the password. A `401` becomes `null`;
+file: it checks the password against `user_authentication`, joins `borrower`, `loan`, `program_of_study` and
+`payment` into a `User` (including its `program` object — code, name, field of study, credential level,
+duration, annual tuition, co-op flag, description; `programOfStudy` stays as the program's name), and returns it
+**without** the password. A `401` becomes `null`;
 any other failure throws, which the login screen already handles as a rejected promise.
 
 ```ts
@@ -891,11 +914,12 @@ names.** Build it with `npm run db:build`, serve it with `npm run api`.
 Posts an accepted payment to `/api/payments`. The API writes the `payment_history` row and
 updates the `loan` and `payment` rows in **one transaction**, refusing the write if the
 borrower's stored balance no longer equals `expectedBalance` (`409`) or the figures do not
-add up (`400`). Every failure — including an unreachable API — is returned as
+add up (`400`). The write may also name who made it (`createdBy`, `user:<name>` or `agent:<id>`, default
+`user:<username>`; a malformed value is `400`) and that is stored on the row. Every failure — including an unreachable API — is returned as
 `{ success: false, message }`; the adapter never throws.
 
 The same adapter reads the ledger back with `GET /api/payments/history?username=…`. The API
-returns the rows **oldest first and unsorted by any business rule**; `buildPaymentHistory()`
+returns the rows (each with its `createdBy`) **oldest first and unsorted by any business rule**; `buildPaymentHistory()`
 in the domain puts them newest first and totals them. An unknown borrower is `404`, a
 missing `username` is `400`, and an unreachable API becomes `{ success: false, message }`.
 
@@ -903,18 +927,19 @@ missing `username` is `400`, and an unreachable API becomes `{ success: false, m
 
 Posts an accepted contact update to `/api/profile`. The API re-checks the basics (email
 shape, phone digits, non-empty address), updates `borrower_contact` and writes the
-`profile_update_history` row in **one transaction**. Every failure — including an unreachable
+`profile_update_history` row in **one transaction**. The write may also name who made it (`createdBy`, as for payments; a malformed
+value is `400`). Every failure — including an unreachable
 API — is returned as `{ success: false, message }`; the adapter never throws.
 
-The same adapter reads the log back with `GET /api/profile/history?username=…`, with the
-same error handling. `buildProfileUpdateHistory()` in the domain orders it newest first and
+The same adapter reads the log back with `GET /api/profile/history?username=…` (each entry with its
+`createdBy`), with the same error handling. `buildProfileUpdateHistory()` in the domain orders it newest first and
 marks the fields each update changed.
 
 ### 8.2 `ApiLanguageModel` → `LanguageModelPort`
 
 The POC default, and **there is no LLM behind it.** The adapter is a thin client: each
 port method becomes one `POST /api/language-model/<operation>` to the local API, where the
-"model" lives in [`server/language-model/`](../server/language-model/): a weighted
+"model" lives in [`server/language-model/`](../../server/language-model/): a weighted
 **keyword router** that proposes a topic, and **string templates** that phrase figures the
 core already computed. It is also the offline fallback `AzureAiLanguageModel` delegates to.
 
@@ -926,9 +951,9 @@ core already computed. It is also the offline fallback `AzureAiLanguageModel` de
 | `describeTone` | `describe-tone` | the blurb for a band the core already chose |
 | `composeWelcome` | `compose-welcome` — only `firstName` and `userType` are sent | persona copy |
 
-**The keyword router** ([`keyword-router.mjs`](../server/language-model/keyword-router.mjs)) is a
+**The keyword router** ([`keyword-router.mjs`](../../server/language-model/keyword-router.mjs)) is a
 framework, not a list of regexes — the topics and keywords are **data** in
-[`intents.mjs`](../server/language-model/intents.mjs):
+[`intents.mjs`](../../server/language-model/intents.mjs):
 
 | Step | What it does |
 |---|---|
@@ -961,8 +986,8 @@ leave the core. The router matches keywords, **not** the descriptions the core a
 keywords behind them (`matched`), e.g. for *"I've moved — I need to change my mailing
 address."*: `PROFILE_UPDATE: 8` from `change * address` (5) + `mailing address` (3).
 
-**The regression table.** [`classification.cases.mjs`](../server/language-model/classification.cases.mjs)
-holds ~70 questions with the topic each must reach (and a few that must reach *none*);
+**The regression table.** [`classification.cases.mjs`](../../server/language-model/classification.cases.mjs)
+holds 74 questions with the topic each must reach (and a few that must reach *none*);
 `npm run test:router` runs them plus tests of the stemmer, wildcard, negatives and
 tie-breaking, using Node's built-in test runner. A question that lands on the wrong card is
 added to the table **first**; the older rows then stop one fix breaking another.
@@ -1005,7 +1030,7 @@ can never accidentally ship a key.
 ### 8.4 `ApiKnowledgeBase` → `KnowledgeBasePort`
 
 Synthetic job catalog read from the `job_posting` table through `GET /api/jobs?program=…`.
-The API picks the postings for the program of study — or, when the program matches
+The API picks the postings for the borrower's program of study (its `program.name`, as in the `program_of_study` catalogue) — or, when the program matches
 nothing, the `General` set that is open to any field — and the adapter caches one
 request per program. 20 postings across six programs of study (Computer Science,
 Registered Nursing, Mechanical Engineering, Marketing, Graphic Design, Culinary Arts)
@@ -1013,7 +1038,7 @@ plus the `General` set.
 
 **The catalog is data, not code.** Each row carries its own city, province, pay and
 employment type, so adding a posting is one row in
-[`db/seed-data.mjs`](../db/seed-data.mjs) followed by `npm run db:build` — no adapter
+[`db/seed-data.mjs`](../../db/seed-data.mjs) followed by `npm run db:build` — no adapter
 change:
 
 ```js
@@ -1072,15 +1097,16 @@ implement a driving port and delegate straight to these functions.
 
 | File | Exports | Rules it owns |
 |---|---|---|
-| [`user.entity.ts`](../src/app/core/domain/user.entity.ts) | `User`, `UserType`, `USER_TYPE_LABEL` | The borrower record; the 1/2/3 standing taxonomy. |
-| [`loan.entity.ts`](../src/app/core/domain/loan.entity.ts) | `LoanInfo`, `buildLoanInfo`, `paidPercent`, `monthsToMaturity` | `paidPercent` clamped 0–100; `monthsToMaturity` never negative. |
-| [`payment.entity.ts`](../src/app/core/domain/payment.entity.ts) | `PaymentSnapshot`, `PaymentRequest`, `PaymentResult`, `PaymentHistory`, `PaymentHistoryEntry`, `buildPaymentHistory`, `buildPaymentSnapshot`, `processPayment`, `suggestExtraPayment`, `fundingSources` | `MIN_PAYMENT = $1`; past-due derived as `nextPaymentAmount > monthlyPayment`; suggestion = 10% of balance rounded to $25; reference `PMT-YYYYMMDD-XXXXXX`. |
-| [`borrower.entity.ts`](../src/app/core/domain/borrower.entity.ts) | `BorrowerProfile`, `ProfileContact`, `ProfileUpdateResult`, `buildBorrowerProfile`, `currentContact`, `applyProfileUpdate` | Standing label/tone/summary per type; email and phone validation; reference `PRF-YYYYMMDD-XXXXXX`. |
-| [`eligibility.entity.ts`](../src/app/core/domain/eligibility.entity.ts) | `RateReliefOutcome`, `checkRateReliefEligibility` | The rate-relief **verdict** and its money math. |
-| [`inquiry.type.ts`](../src/app/core/domain/inquiry.type.ts) | `InquiryCategory` | The topic taxonomy — the one inquiry declaration that genuinely crosses rings. |
-| [`sentiment.type.ts`](../src/app/core/domain/sentiment.type.ts) | `SentimentLabel`, `SentimentTone` | The sentiment vocabulary. |
-| [`job-posting.type.ts`](../src/app/core/domain/job-posting.type.ts) | `JobPosting` | Grounding shape. |
-| [`date.utility.ts`](../src/app/core/domain/date.utility.ts) | `parseIsoDate` | Parses `yyyy-MM-dd` as a **local** calendar date. |
+| [`user.entity.ts`](../../src/app/core/domain/user.entity.ts) | `User`, `ProgramOfStudy`, `UserType`, `USER_TYPE_LABEL` | The borrower record, including the program of study its loan financed (`program`; `programOfStudy` is its name); the 1/2/3 standing taxonomy. |
+| [`loan.entity.ts`](../../src/app/core/domain/loan.entity.ts) | `LoanInfo`, `buildLoanInfo`, `paidPercent`, `monthsToMaturity` | `paidPercent` clamped 0–100; `monthsToMaturity` never negative. |
+| [`payment.entity.ts`](../../src/app/core/domain/payment.entity.ts) | `PaymentApplyTo`, `PaymentSnapshot`, `PaymentRequest`, `PaymentResult`, `PaymentHistory`, `PaymentHistoryEntry` (carries `createdBy`), `buildPaymentHistory`, `buildPaymentSnapshot`, `processPayment`, `applyPayment`, `suggestExtraPayment`, `fundingSources` | `MIN_PAYMENT = $1`; past-due derived as `nextPaymentAmount > monthlyPayment`; suggestion = 10% of balance rounded to $25; reference `PMT-YYYYMMDD-XXXXXX`. |
+| [`borrower.entity.ts`](../../src/app/core/domain/borrower.entity.ts) | `BorrowerProfile`, `ProfileContact`, `ContactField`, `ProfileUpdateEntry` (carries `createdBy`), `ProfileUpdateHistoryEntry`, `ProfileUpdateHistory`, `ProfileUpdateResult`, `buildBorrowerProfile`, `buildProfileUpdateHistory`, `currentContact`, `applyProfileUpdate` | Standing label/tone/summary per type; email and phone validation; reference `PRF-YYYYMMDD-XXXXXX`. |
+| [`eligibility.entity.ts`](../../src/app/core/domain/eligibility.entity.ts) | `RateReliefOutcome`, `checkRateReliefEligibility` | The rate-relief **verdict** and its money math. |
+| [`inquiry.type.ts`](../../src/app/core/domain/inquiry.type.ts) | `InquiryCategory` | The topic taxonomy (11 topics, including `PROGRAM_OF_STUDY`) — the one inquiry declaration that genuinely crosses rings. |
+| [`sentiment.type.ts`](../../src/app/core/domain/sentiment.type.ts) | `SentimentLabel`, `SentimentTone` | The sentiment vocabulary. |
+| [`job-posting.type.ts`](../../src/app/core/domain/job-posting.type.ts) | `JobPosting` | Grounding shape. |
+| [`date.utility.ts`](../../src/app/core/domain/date.utility.ts) | `parseIsoDate` | Parses `yyyy-MM-dd` as a **local** calendar date. |
+| [`actor.utility.ts`](../../src/app/core/domain/actor.utility.ts) | `Actor`, `parseActor`, `describeActor` | Reads a history row's `createdBy` (`user:<name>` / `agent:<id>`); `describeActor` gives "You" for the signed-in borrower and `Agent <id>` for staff. |
 
 > **`standingSummary` is prose that lives in the domain, not the CLL** — because it
 > asserts something the business is accountable for. Contrast `describeTone()`,
@@ -1149,15 +1175,17 @@ permitted framework imports because it is configuration — neither core nor por
 |---|---|
 | Driving · BLL | `AUTHENTICATE_PORT`, `PAYMENT_PORT`, `LOAN_INFO_PORT`, `PROFILE_PORT`, `ELIGIBILITY_PORT` |
 | Driving · CLL | `INQUIRY_PORT`, `PERSONALIZATION_PORT`, `CHAT_INSIGHTS_PORT`, `ACCOUNT_SUMMARY_PORT` |
-| Driven | `USER_REPOSITORY_PORT`, `KNOWLEDGE_BASE_PORT`, `CHAT_HISTORY_PORT`, `LANGUAGE_MODEL_PORT` |
+| Driven | `USER_REPOSITORY_PORT`, `PAYMENT_REPOSITORY_PORT`, `PROFILE_REPOSITORY_PORT`, `KNOWLEDGE_BASE_PORT`, `CHAT_HISTORY_PORT`, `LANGUAGE_MODEL_PORT` |
+| Configuration (a value, not a port) | `INQUIRY_POLICY_CONFIG` |
 
 ### 10.2 `providers.ts` — the wiring table
 
 The **one** file in the application that knows every concrete class. Registered
-into the bootstrap in [`main.ts`](../src/main.ts) as `...hexagonalProviders`.
+into the bootstrap in [`main.ts`](../../src/main.ts) as `...hexagonalProviders`.
 
 | Port (binding key) | Concrete class | Constructor dependencies |
 |---|---|---|
+| `INQUIRY_POLICY_CONFIG` | the `INQUIRY_POLICY` value | — |
 | `USER_REPOSITORY_PORT` | `ApiUserRepository` | — |
 | `PAYMENT_REPOSITORY_PORT` | `ApiPaymentRepository` | — |
 | `PROFILE_REPOSITORY_PORT` | `ApiProfileRepository` | — |
@@ -1373,6 +1401,8 @@ flowchart LR
         JO[JobOpportunities]
         IR[InterestRelief]
         RO[RepaymentOptions]
+        PH[PaymentHistory]
+        PRH[ProfileHistory]
         ACS[AccountSummary]
         CIC[ChatInsights]
     end
@@ -1405,6 +1435,8 @@ flowchart LR
     RO --> PAY
     RO --> PROF
     RO --> ELIG
+    PH --> PAY
+    PRH --> PROF
     ACS --> SUMP
     CIC --> CHIP
 
@@ -1413,7 +1445,7 @@ flowchart LR
     SUMP -.-> PAY
 ```
 
-`GeneralHelpComponent` and `AiBadgeComponent` are absent from this map on purpose:
+`GeneralHelpComponent`, `ProgramOfStudyComponent` and `AiBadgeComponent` are absent from this map on purpose:
 they inject nothing.
 
 ---
@@ -1422,19 +1454,37 @@ they inject nothing.
 
 ### User
 
-The input to nearly every operation. One borrower, joined from the `borrower`, `loan`, `payment` and `user_authentication` tables of `assets/loanservicing.db`.
+The input to nearly every operation. One borrower, joined from the `borrower`, `loan`, `program_of_study`, `payment` and `user_authentication` tables of `assets/loanservicing.db`.
 
 ```ts
 {
   username: string;  firstName: string;  lastName: string;
   userType: UserType;                 // 1 | 2 | 3
-  programOfStudy: string;  city: string;  province: string;
+  programOfStudy: string;             // = program.name, kept for callers that only need the name
+  program: ProgramOfStudy;
+  city: string;  province: string;
   originalAmount: number;  currentBalance: number;  interestRate: number;  // annual %, e.g. 4.25
   monthlyPayment: number;  nextPaymentDate: string;  nextPaymentAmount: number;
   maturityDate: string;               // ISO yyyy-mm-dd
   paymentsMade: number;  paymentsMissed: number;  onTimeStreak: number;
   creditScore: number;
   email: string;  phone: string;  mailingAddress: string;   // editable contact details
+}
+```
+
+### ProgramOfStudy
+
+The program of study a loan financed, from the `program_of_study` catalogue. Reference data: the same program is the same for every borrower enrolled in it.
+
+```ts
+{
+  code: string;              // catalogue code, e.g. 'CS-BSC'
+  name: string;              // what the borrower sees, e.g. 'Computer Science'
+  fieldOfStudy: string;      // broad grouping, e.g. 'Technology'
+  credentialLevel: string;   // e.g. "Bachelor's degree", 'Diploma'
+  durationMonths: number;    annualTuition: number;
+  coOp: boolean;             // true = the program includes paid work terms
+  description: string;
 }
 ```
 
@@ -1519,7 +1569,9 @@ The input to nearly every operation. One borrower, joined from the `borrower`, `
   id: number;  referenceNumber: string;  amount: number;  fundingSource: string;
   applyTo: 'PRINCIPAL' | 'NEXT_INSTALLMENT';
   effectiveDate: string;     // ISO yyyy-mm-dd
-  balanceAfter: number;      recordedAt: string;   // ISO instant
+  balanceAfter: number;
+  createdBy: string;         // 'user:<name>' (the borrower) or 'agent:<id>' (servicing staff)
+  recordedAt: string;        // ISO instant
 }
 ```
 
@@ -1537,7 +1589,9 @@ The input to nearly every operation. One borrower, joined from the `borrower`, `
 
 ```ts
 {
-  id: number;  referenceNumber: string;  recordedAt: string;   // ISO instant
+  id: number;  referenceNumber: string;
+  createdBy: string;                                           // 'user:<name>' (the borrower) or 'agent:<id>' (servicing staff)
+  recordedAt: string;                                          // ISO instant
   email: string;  phone: string;  mailingAddress: string;      // the FULL contact after this update
   changed: ('email' | 'phone' | 'mailingAddress')[] | null;   // null = earliest update on record
 }
@@ -1672,7 +1726,7 @@ WelcomeCopy + { themeClass: string }    // themeClass added in the core, not by 
 | Type | Values |
 |---|---|
 | `UserType` | `1` Excellent standing · `2` Delinquency grade 1 · `3` Delinquency grade 2 |
-| `InquiryCategory` | `NEXT_PAYMENT` · `LOAN_BALANCE` · `EXTRA_PAYMENT` · `PROFILE_UPDATE` · `PAYMENT_HISTORY` · `PROFILE_HISTORY` · `HARDSHIP` · `LIFE_EVENT` · `REPAYMENT_OPTIONS` · `GENERAL` |
+| `InquiryCategory` | `NEXT_PAYMENT` · `LOAN_BALANCE` · `EXTRA_PAYMENT` · `PROFILE_UPDATE` · `PAYMENT_HISTORY` · `PROFILE_HISTORY` · `PROGRAM_OF_STUDY` · `HARDSHIP` · `LIFE_EVENT` · `REPAYMENT_OPTIONS` · `GENERAL` |
 | `PaymentApplyTo` | `PRINCIPAL` · `NEXT_INSTALLMENT` |
 | `SentimentLabel` | `Very positive` · `Positive` · `Neutral` · `Negative` · `Very negative` |
 | `SentimentTone` | `good` · `warn` · `bad` |
@@ -1691,6 +1745,7 @@ Which topics are answered identically for every borrower. Owned by the business;
 | `PROFILE_UPDATE` | `true` | Update your profile |
 | `PAYMENT_HISTORY` | `true` | Payment history |
 | `PROFILE_HISTORY` | `true` | Profile update history |
+| `PROGRAM_OF_STUDY` | `true` | Program of study |
 | `HARDSHIP` | `false` | Payment hardship |
 | `LIFE_EVENT` | `false` | Life event & rate relief |
 | `REPAYMENT_OPTIONS` | `false` | Repayment options & scenarios |
@@ -1713,6 +1768,7 @@ is being asked to make.
 | `PROFILE_UPDATE` | Changing contact details on file. If they want to **see** changes already made, `PROFILE_HISTORY` instead. |
 | `PAYMENT_HISTORY` | A list of payments **already made** — past payments, records, receipts. They want to **see** what was paid, not make a payment (`EXTRA_PAYMENT`) nor know the upcoming instalment (`NEXT_PAYMENT`). |
 | `PROFILE_HISTORY` | A list of changes **already made** to the contact details — earlier email, phone or address updates and when. They want to **see** past updates, not make a new one (`PROFILE_UPDATE`). |
+| `PROGRAM_OF_STUDY` | The program the loan financed — its name, code, field, credential, length, tuition and whether it includes co-op terms. They want to know **what** they studied, not what they owe (`LOAN_BALANCE`). |
 | `HARDSHIP` | Present or imminent **inability to pay** — job loss, expects to miss payments. |
 | `LIFE_EVENT` | A life event that may change entitlement (new child, marriage, return to study), including hypothetical framing. Beats `REPAYMENT_OPTIONS` when an event is mentioned; loses to `HARDSHIP` when they cannot pay now. |
 | `REPAYMENT_OPTIONS` | Scenarios and qualifying conditions while **not** in distress — paying off faster, what assistance requires. |
@@ -1725,22 +1781,22 @@ is being asked to make.
 ### Adding a port
 
 1. Declare the interface in `ports/driving/` or `ports/driven/` — pure TypeScript, no `@angular`.
-2. Add a binding key — an `InjectionToken` typed to the **interface** — in [`configuration/tokens.ts`](../src/app/configuration/tokens.ts).
+2. Add a binding key — an `InjectionToken` typed to the **interface** — in [`configuration/tokens.ts`](../../src/app/configuration/tokens.ts).
 3. Implement it — in `core/application/` (BLL) or `core/cognitive/` (CLL) for a driving port; in `adapters/driven/` for a driven one.
-4. Bind it in [`configuration/providers.ts`](../src/app/configuration/providers.ts).
+4. Bind it in [`configuration/providers.ts`](../../src/app/configuration/providers.ts).
 
 Nothing else in the application needs to know. **That is the property this
 reference exists to document.**
 
 ### Adding an inquiry topic
 
-1. Add the value to `InquiryCategory` in [`inquiry.type.ts`](../src/app/core/domain/inquiry.type.ts).
-2. Add entries to all three maps in [`inquiry.policy.config.ts`](../src/app/configuration/inquiry.policy.config.ts) — `DETERMINISM_POLICY`, `CATEGORY_LABEL`, `CATEGORY_DESCRIPTION`. TypeScript's `Record<InquiryCategory, …>` makes omitting one a compile error.
+1. Add the value to `InquiryCategory` in [`inquiry.type.ts`](../../src/app/core/domain/inquiry.type.ts).
+2. Add entries to all three maps in [`inquiry.policy.config.ts`](../../src/app/configuration/inquiry.policy.config.ts) — `DETERMINISM_POLICY`, `CATEGORY_LABEL`, `CATEGORY_DESCRIPTION`. TypeScript's `Record<InquiryCategory, …>` makes omitting one a compile error.
 3. Build the answer component in `adapters/driving/ui/inquiry/` taking `@Input() user` and injecting whichever driving ports supply its figures.
 4. Add a `@case` to the `@switch` in `dashboard.component.html`.
 
 No adapter changes. The keyword model needs entries for the new topic in
-[`server/language-model/intents.mjs`](../server/language-model/intents.mjs) — plus regression
+[`server/language-model/intents.mjs`](../../server/language-model/intents.mjs) — plus regression
 cases in `classification.cases.mjs` — or it will never propose it; a semantic adapter picks
 it up from `CATEGORY_DESCRIPTION` alone.
 
